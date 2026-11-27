@@ -1,0 +1,13 @@
+# Text is stored with LF and checked out with LF on every machine, so the checks pass on the
+# owner's Windows runners too (their git has core.autocrlf on); cmd.exe scripts keep CRLF.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff2 binary
