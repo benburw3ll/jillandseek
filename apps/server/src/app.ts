@@ -29,6 +29,10 @@ export function createApp(options: AppOptions) {
     c.header('x-content-type-options', 'nosniff')
     c.header('referrer-policy', 'no-referrer')
     c.header('x-frame-options', 'DENY')
+    // Another site's page can't embed a response, and the API's answers (which can hold contact
+    // lines) are never kept in the browser's cache.
+    c.header('cross-origin-resource-policy', 'same-origin')
+    if (c.req.path.startsWith('/api/')) c.header('cache-control', 'no-store')
     c.header(
       'content-security-policy',
       "default-src 'self'; img-src 'self' https: data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
@@ -53,7 +57,11 @@ export function createApp(options: AppOptions) {
 
   app.notFound((c) => jsonError(c, 404, 'not-found'))
   // A stack trace or a message can carry the request's values, so neither leaves the server or
-  // reaches the log: the client gets a code, and the log gets the route and the code.
-  app.onError((_error, c) => jsonError(c, 500, 'internal'))
+  // reaches the log: the client gets a code, and the log gets the code (the request line adds
+  // the route and the status).
+  app.onError((_error, c) => {
+    options.log('error: code=internal')
+    return jsonError(c, 500, 'internal')
+  })
   return app
 }

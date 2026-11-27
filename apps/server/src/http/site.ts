@@ -38,7 +38,8 @@ export function siteHandler(siteDir: string): Handler {
       return jsonError(c, 400, 'bad-path')
     }
     const segments = path.split('/')
-    if (segments.includes('..') || path.includes('\\') || path.includes('\0')) return jsonError(c, 400, 'bad-path')
+    // A colon is a drive letter or an alternate data stream on Windows, and never in a built file's name.
+    if (segments.includes('..') || /[\\:\0]/.test(path)) return jsonError(c, 400, 'bad-path')
     const wanted = resolve(join(root, ...segments))
     if (wanted !== root && !wanted.startsWith(root + sep)) return jsonError(c, 400, 'bad-path')
     const file = isFile(wanted) ? wanted : extname(path) === '' ? join(root, 'index.html') : null

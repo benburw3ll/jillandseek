@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DogPatch, daysBefore, Instant, ListingCandidate } from './index.ts'
+import { DogPatch, daysBefore, Instant, ListingCandidate, SourceEntry } from './index.ts'
 
 // Made-up values only: an invented source, an invented town and coordinates at 0, 0.
 const candidate = { sourceId: 'zorbulon-shelter', sourceKey: 'Z-1', url: 'https://shelter.example.com/z-1' }
@@ -29,8 +29,20 @@ describe('ListingCandidate', () => {
 
 describe('DogPatch', () => {
   it('holds only the fields given, with no defaults filled in', () => {
-    expect(DogPatch.parse({ status: 'found' })).toEqual({ status: 'found' })
+    expect(DogPatch.parse({ status: 'found' })).toStrictEqual({ status: 'found' })
     expect(DogPatch.safeParse({ photos: ['x.jpg'] }).success).toBe(false)
+  })
+})
+
+describe('SourceEntry', () => {
+  const entry = { id: 'zorbulon-shelter', name: 'Zorbulon', url: 'https://shelter.example.com/', region: 'Zorbulon' }
+
+  it('names a collector for an automatic source only', () => {
+    const kinds = { listingKinds: ['found'] }
+    expect(SourceEntry.safeParse({ ...entry, ...kinds, access: 'automatic', collector: 'zorbulon' }).success).toBe(true)
+    expect(SourceEntry.safeParse({ ...entry, ...kinds, access: 'automatic' }).success).toBe(false)
+    expect(SourceEntry.safeParse({ ...entry, ...kinds, access: 'link', collector: 'zorbulon' }).success).toBe(false)
+    expect(SourceEntry.safeParse({ ...entry, ...kinds, access: 'link' }).success).toBe(true)
   })
 })
 

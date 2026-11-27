@@ -51,21 +51,33 @@ export function migrate(
     throw new Error(`the database is at schema ${from}, newer than this app's ${latest}: update the app`)
   }
   const applied: number[] = []
-  for (const m of migrations.filter((m) => m.version > from)) {
-    db.exec('BEGIN IMMEDIATE')
-    try {
-      db.exec(m.sql)
-      db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(
-        m.version,
-        m.name,
-        now,
-      )
-      db.exec('COMMIT')
-    } catch (error) {
-      db.exec('ROLLBACK')
-      throw new Error(`migration ${m.version} failed and was rolled back`, { cause: error })
+  // Changing a column in SQLite means rebuilding its table, and with foreign keys on, dropping the
+  // old table would cascade and delete every match. So keys are off while a migration runs (SQLite
+  // ignores the switch inside a transaction), checked before it commits, and back on after.
+  const keysWereOn = (db.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number }).foreign_keys === 1
+  db.exec('PRAGMA foreign_keys = OFF')
+  try {
+    for (const m of migrations.filter((m) => m.version > from)) {
+      db.exec('BEGIN IMMEDIATE')
+      try {
+        db.exec(m.sql)
+        if (db.prepare('PRAGMA foreign_key_check').all().length > 0) {
+          throw new Error(`migration ${m.version} leaves rows pointing at rows that are gone`)
+        }
+        db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(
+          m.version,
+          m.name,
+          now,
+        )
+        db.exec('COMMIT')
+      } catch (error) {
+        db.exec('ROLLBACK')
+        throw new Error(`migration ${m.version} failed and was rolled back`, { cause: error })
+      }
+      applied.push(m.version)
     }
-    applied.push(m.version)
+  } finally {
+    if (keysWereOn) db.exec('PRAGMA foreign_keys = ON')
   }
   return { from, to: schemaVersion(db), applied }
 }

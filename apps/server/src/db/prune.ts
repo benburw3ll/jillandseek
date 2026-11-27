@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs'
+import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import { daysBefore, Instant, PhotoName } from '@jillandseek/core'
@@ -35,18 +35,29 @@ export function pruneRepository(db: DatabaseSync, photosDir: string, retention: 
       })
       let removed = 0
       let photoErrors = 0
-      for (const name of photos) {
-        // Only a bare file name inside photos/ is ever removed.
-        if (!PhotoName.safeParse(name).success) {
-          photoErrors++
-          continue
-        }
+      const remove = (name: string) => {
         try {
-          rmSync(join(photosDir, String(name)), { force: true })
+          rmSync(join(photosDir, name), { force: true })
           removed++
         } catch {
           photoErrors++
         }
+      }
+      for (const name of photos) {
+        // Only a bare file name inside photos/ is ever removed.
+        if (PhotoName.safeParse(name).success) remove(String(name))
+        else photoErrors++
+      }
+      // A photo whose removal failed last time (a locked file, a crash) has no dog naming it any
+      // more: it goes now. photos/ is the app's own folder, and a file younger than a day is left
+      // alone, so a photo saved just before its dog's row is never taken for an orphan.
+      const named = new Set(
+        (db.prepare('SELECT photos FROM dogs').all() as Row[]).flatMap((dog) => json(dog.photos) as string[]),
+      )
+      const dayBefore = Date.parse(daysBefore(now, 1))
+      for (const entry of existsSync(photosDir) ? readdirSync(photosDir, { withFileTypes: true }) : []) {
+        if (!entry.isFile() || named.has(entry.name) || !PhotoName.safeParse(entry.name).success) continue
+        if (statSync(join(photosDir, entry.name)).mtimeMs < dayBefore) remove(entry.name)
       }
       return { listings, dogs, photos: removed, photoErrors }
     },

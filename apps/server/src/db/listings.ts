@@ -121,10 +121,13 @@ export function listingsRepository(db: DatabaseSync) {
 
     /**
      * After a full read of a source, marks every listing of that source the read didn't see as
-     * gone at `now`. Returns how many were marked.
+     * gone at `now`. Returns how many were marked. A read that saw nothing marks nothing: a
+     * broken or changed page looks the same as an empty one, and pruning would then delete the
+     * whole source's listings.
      */
     markGone(sourceId: string, seenKeys: string[], now: string): number {
       Instant.parse(now)
+      if (seenKeys.length === 0) return 0
       const result = db
         .prepare(
           `UPDATE listings SET gone_at = :now

@@ -31,24 +31,35 @@ const registryFields = {
   notes: z.string().max(2000).nullable(),
 }
 
+/** An automatic source names its collector; a capture or link source has none (ADR-0005). */
+function checkCollector(source: { access: Access; collector: string | null }, ctx: z.RefinementCtx): void {
+  if ((source.access === 'automatic') !== (source.collector !== null)) {
+    ctx.addIssue({ code: 'custom', path: ['collector'], message: 'set only when access is automatic' })
+  }
+}
+
 /** One registry entry: what the registry owns. A registry entry is never `blocked`. */
-export const SourceEntry = z.object({
-  ...registryFields,
-  collector: registryFields.collector.default(null),
-  checkedOn: registryFields.checkedOn.default(null),
-  checkNote: registryFields.checkNote.default(null),
-  notes: registryFields.notes.default(null),
-  status: z.enum(['active', 'retired']).default('active'),
-})
+export const SourceEntry = z
+  .object({
+    ...registryFields,
+    collector: registryFields.collector.default(null),
+    checkedOn: registryFields.checkedOn.default(null),
+    checkNote: registryFields.checkNote.default(null),
+    notes: registryFields.notes.default(null),
+    status: z.enum(['active', 'retired']).default('active'),
+  })
+  .superRefine(checkCollector)
 export type SourceEntry = z.infer<typeof SourceEntry>
 export type SourceEntryInput = z.input<typeof SourceEntry>
 
 /** A source as stored: the registry's fields plus the sweep's. */
-export const Source = z.object({
-  ...registryFields,
-  status: SourceStatus,
-  blockedAt: Instant.nullable(),
-  blockedReason: BlockedReason.nullable(),
-  lastReadAt: Instant.nullable(),
-})
+export const Source = z
+  .object({
+    ...registryFields,
+    status: SourceStatus,
+    blockedAt: Instant.nullable(),
+    blockedReason: BlockedReason.nullable(),
+    lastReadAt: Instant.nullable(),
+  })
+  .superRefine(checkCollector)
 export type Source = z.infer<typeof Source>

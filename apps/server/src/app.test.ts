@@ -163,6 +163,8 @@ describe('the guards', () => {
     expect(JSON.parse(body)).toEqual({ error: { code: 'internal' } })
     expect(body).not.toContain(failing)
     expect(lines.join('\n')).not.toContain(failing)
+    expect(lines).toContain('error: code=internal')
+    expect(res.headers.get('cache-control')).toBe('no-store')
   })
 })
 
@@ -279,6 +281,7 @@ describe('the built site', () => {
       '/..%2foutside.txt',
       '/%5c..%5coutside.txt',
       '/assets/..%2f..%2foutside.txt',
+      '/index.html::$DATA',
     ]
     for (const path of climbs) {
       const res = await request(path)

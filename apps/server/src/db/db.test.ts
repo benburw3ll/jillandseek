@@ -1,4 +1,14 @@
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -88,6 +98,34 @@ describe('the data home and migrations', () => {
     expect(store.schemaVersion).toBe(good.length)
     expect(store.db.prepare("SELECT name FROM sqlite_master WHERE name = 'zz_half'").get()).toBeUndefined()
   })
+
+  it('keeps the matches when a migration rebuilds the listings table', () => {
+    const home = tempHome()
+    const first = open(home)
+    first.repo.syncSources([source])
+    const listingId = first.repo.upsertListing(candidate('Z-1'), at(1)).id
+    const dogId = first.repo.createDog({ lastSeenAt: at(1), lastSeenTown: 'Quuxville' }, at(1)).id
+    first.db
+      .prepare(
+        "INSERT INTO matches (dog_id, listing_id, score, band, reasons, computed_at) VALUES (?, ?, 0.5, 'weak', '[]', ?)",
+      )
+      .run(dogId, listingId, at(1))
+    const { sql } = first.db.prepare("SELECT sql FROM sqlite_master WHERE name = 'listings'").get() as { sql: string }
+    first.close()
+    stores.pop()
+    const good = readMigrations()
+    const rebuild: Migration = {
+      version: good.length + 1,
+      name: 'rebuild',
+      sql: `${sql.replace('CREATE TABLE listings', 'CREATE TABLE listings_new')};
+        INSERT INTO listings_new SELECT * FROM listings; DROP TABLE listings;
+        ALTER TABLE listings_new RENAME TO listings;`,
+    }
+    const store = open(home, [...good, rebuild])
+    expect(store.schemaVersion).toBe(good.length + 1)
+    expect(store.repo.counts()).toMatchObject({ listings: 1, matches: 1 })
+    expect((store.db.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number }).foreign_keys).toBe(1)
+  })
 })
 
 describe('listings', () => {
@@ -110,6 +148,7 @@ describe('listings', () => {
     const { repo } = open()
     repo.syncSources([source])
     for (const key of ['Z-1', 'Z-2', 'Z-3']) repo.upsertListing(candidate(key), at(1))
+    expect(repo.markGone(source.id, [], at(2))).toBe(0)
     expect(repo.markGone(source.id, ['Z-1', 'Z-3'], at(2))).toBe(1)
     expect(repo.listListings().items.map((l) => l.sourceKey)).toEqual(['Z-3', 'Z-1'])
     const gone = repo.listListings({ includeGone: true }).items.find((l) => l.sourceKey === 'Z-2')
@@ -209,5 +248,20 @@ describe('pruneExpired', () => {
     expect(repo.getDog(missing.id)).not.toBeNull()
     expect(repo.counts().matches).toBe(0)
     expect(existsSync(join(home.photosDir, 'zorbulon-1.jpg'))).toBe(false)
+  })
+
+  it('removes a photo no dog names once it is a day old, and nothing else', () => {
+    const { db, home, repo } = open()
+    const dog = repo.createDog({ lastSeenAt: at(1), lastSeenTown: 'Quuxville' }, at(1))
+    db.prepare('UPDATE dogs SET photos = ? WHERE id = ?').run(JSON.stringify(['kept.jpg']), dog.id)
+    for (const name of ['kept.jpg', 'orphan-old.jpg', 'orphan-new.jpg']) {
+      writeFileSync(join(home.photosDir, name), 'made-up bytes')
+    }
+    const old = new Date('2026-01-01T00:00:00.000Z')
+    utimesSync(join(home.photosDir, 'kept.jpg'), old, old)
+    utimesSync(join(home.photosDir, 'orphan-old.jpg'), old, old)
+    const now = new Date(statSync(join(home.photosDir, 'orphan-new.jpg')).mtimeMs + 60_000).toISOString()
+    expect(repo.pruneExpired(now)).toMatchObject({ dogs: 0, photos: 1, photoErrors: 0 })
+    expect(readdirSync(home.photosDir).sort()).toEqual(['kept.jpg', 'orphan-new.jpg'])
   })
 })

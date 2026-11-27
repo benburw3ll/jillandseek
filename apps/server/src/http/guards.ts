@@ -27,6 +27,8 @@ export function hostAndOrigin(hosts: Set<string>): MiddlewareHandler {
   return async (c, next) => {
     const host = c.req.header('host')?.toLowerCase()
     if (host === undefined || !hosts.has(host)) return jsonError(c, 403, 'foreign-host')
+    // A request line in absolute form (GET http://other.example/...) names a host of its own.
+    if (!hosts.has(new URL(c.req.url).host.toLowerCase())) return jsonError(c, 403, 'foreign-host')
     const origin = c.req.header('origin')
     if (origin !== undefined && !origins.has(origin.toLowerCase())) return jsonError(c, 403, 'foreign-origin')
     await next()
