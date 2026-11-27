@@ -10,6 +10,8 @@
   },
   "scripts": {
     "prepare": "lefthook install",
+    "dev": "pnpm --parallel --filter @jillandseek/server --filter @jillandseek/web run dev",
+    "start": "pnpm --filter @jillandseek/web run build && pnpm --filter @jillandseek/server run start",
     "check": "pnpm check:personal && pnpm typecheck && pnpm lint && pnpm sources:check && pnpm test && pnpm build",
     "check:personal": "node scripts/check-personal.mjs",
     "typecheck": "pnpm -r --if-present typecheck",

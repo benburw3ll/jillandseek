@@ -6,11 +6,15 @@
   "description": "The local API, the sweep and the database.",
   "exports": "./src/index.ts",
   "scripts": {
+    "start": "node src/main.ts",
+    "dev": "node --watch src/main.ts --dev",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@hono/node-server": "2.1.11",
     "@jillandseek/core": "workspace:*",
     "@jillandseek/sources": "workspace:*",
+    "hono": "4.13.23",
     "zod": "4.6.7"
   }
 }

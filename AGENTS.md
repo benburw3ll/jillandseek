@@ -41,10 +41,14 @@ On 2026-11-26 the owner agreed to start the build, and O1's ADRs were accepted w
   - Node runs the TypeScript directly, so the code uses erasable syntax only (no enums, namespaces or parameter properties), `import type` for types, and `.ts` extensions on relative imports. Packages export their source (`"exports": "./src/index.ts"`); only `apps/web` is built.
 - **The gate:** `pnpm check` runs, in order and stopping at the first failure: `check:personal`, `typecheck` (`tsc`, strict), `lint` (Biome), `sources:check`, `test` (Vitest over every package) and `build`. CI's `check` job runs gitleaks and then `pnpm install --frozen-lockfile` and `pnpm check` on GitHub's runners, and nothing merges while it is red.
 - **Commands:**
+  - `pnpm dev`: Vite for `apps/web` on 5200 with `/api` proxied to the server on 5201 (`JILL_API_PORT`), and the server in watch mode, with the data home in `.dev-home/`.
+  - `pnpm start`: builds the site and serves it and the API from the server on 5200, with the data home in `data/`. Try it with `JILL_HOME` set to a temp folder.
   - `pnpm check`: the gate, before every PR.
   - `pnpm test`: the tests alone. `pnpm lint` checks the format and lint; `pnpm format` fixes them.
   - `pnpm sources:check` and `pnpm eval:match` hand over to `packages/sources` and `packages/core`, and do nothing until those packages add the scripts.
-- **Port:** 5200, in `.claude/launch.json` (`jillandseek-dev`). None of the owner's other repos uses it.
+- **Port:** 5200, in `.claude/launch.json` (`jillandseek-dev`). None of the owner's other repos uses it. `JILL_PORT` overrides it. The server binds `127.0.0.1` only.
+- **Data home and settings:** `JILL_HOME` (a relative path is read from the repo's root) holds `jillandseek.db`, `photos/` and `cache/`, and nothing else is touched there. `JILL_KEEP_GONE_DAYS` (90) and `JILL_KEEP_FOUND_DAYS` (30) are the retention lines. Migrations are numbered `.sql` files in `apps/server/src/db/migrations/`, each run in one transaction; the repository (`apps/server/src/db/repository.ts`, one file per record) is the only code that runs SQL.
+- **The API's guards** (`apps/server/src/http/guards.ts`): Host and Origin must be the app's own, a cross-site `Sec-Fetch-Site` is refused on `/api`, a state-changing request needs `Content-Type: application/json` and `X-Jill-And-Seek: 1`, bodies stop at 1 MB, and errors are JSON codes with no stack. Each route file in `apps/server/src/routes/` is registered in `apps/server/src/app.ts`.
 - **Hooks (lefthook):** pre-commit runs `scripts/guard-staged.mjs` (forbidden paths, secret shapes, personal values), commit-msg checks Conventional Commits with a first line of at most 100 characters, and pre-push refuses a push to `main`. Never skip them.
 - **Where it runs:** on the owner's computer only. The server binds `127.0.0.1`.
 - **Dependencies:** the runtime dependencies are the ones ADR-0004 names. Another one needs a short ADR first.
