@@ -1,4 +1,5 @@
 import type { Listing } from '@jillandseek/core'
+import type { ReactNode } from 'react'
 
 export const KIND_WORDS: Record<Listing['kind'], string> = {
   'shelter-stray': 'Shelter stray',
@@ -11,8 +12,19 @@ export const KIND_WORDS: Record<Listing['kind'], string> = {
 const day = (moment: string) => moment.slice(0, 10)
 const known = (value: string) => (value === 'unknown' ? null : value)
 
-/** One listing: its photo from the source, what it says, where and when, and the original post. */
-export function ListingCard({ listing: l, sourceName }: { listing: Listing; sourceName: string }) {
+/**
+ * One listing: its photo from the source, what it says, where and when, and the original post.
+ * `children` go above the facts: the dog page puts a match's band and reasons there.
+ */
+export function ListingCard({
+  listing: l,
+  sourceName,
+  children,
+}: {
+  listing: Listing
+  sourceName: string
+  children?: ReactNode
+}) {
   const photo = l.photoUrls[0]
   const place = [l.placeText, l.town, l.county && `${l.county} County`].filter(Boolean)
   const traits = [known(l.traits.size), known(l.traits.sex), known(l.traits.age)].filter(Boolean)
@@ -30,6 +42,7 @@ export function ListingCard({ listing: l, sourceName }: { listing: Listing; sour
           <strong>{KIND_WORDS[l.kind]}</strong>
           {l.goneAt !== null && <span className="listing-card__gone"> · gone since {day(l.goneAt)}</span>}
         </p>
+        {children}
         <dl className="listing-card__facts">
           <dt>Breed</dt>
           <dd>{l.traits.breeds.length > 0 ? l.traits.breeds.join(', ') : 'Not given'}</dd>

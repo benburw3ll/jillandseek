@@ -73,6 +73,9 @@ export function DogList() {
                   Last seen in {dog.lastSeenTown}, {day(dog.lastSeenAt)}
                 </span>
                 <span className="dog-item__actions">
+                  <Link href={`/dogs/${dog.id}`}>
+                    Listings<span className="visually-hidden"> for {name}</span>
+                  </Link>
                   <Link href={`/find/${dog.id}`}>
                     Edit<span className="visually-hidden"> {name}</span>
                   </Link>

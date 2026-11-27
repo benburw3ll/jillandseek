@@ -1,5 +1,6 @@
 import { Route, Switch } from 'wouter'
 import { Layout } from './Layout.tsx'
+import { DogPage } from './pages/DogPage.tsx'
 import { FindDog } from './pages/FindDog.tsx'
 import { Home } from './pages/Home.tsx'
 import { Listings } from './pages/Listings.tsx'
@@ -15,6 +16,9 @@ export function App() {
         <Route path="/find">{() => <FindDog key="new" />}</Route>
         <Route path="/find/:id">
           {(p) => (/^[1-9]\d{0,15}$/.test(p.id) ? <FindDog key={p.id} id={Number(p.id)} /> : <NotFound />)}
+        </Route>
+        <Route path="/dogs/:id">
+          {(p) => (/^[1-9]\d{0,15}$/.test(p.id) ? <DogPage key={p.id} id={Number(p.id)} /> : <NotFound />)}
         </Route>
         <Route path="/listings" component={Listings} />
         <Route path="/sources" component={Sources} />
