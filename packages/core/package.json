@@ -7,7 +7,8 @@
   "exports": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc -p .",
-    "towns:refresh": "node scripts/refresh-towns.mjs"
+    "towns:refresh": "node scripts/refresh-towns.mjs",
+    "eval:match": "node eval/run.ts"
   },
   "dependencies": {
     "zod": "4.6.7"

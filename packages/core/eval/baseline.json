@@ -1,0 +1,10 @@
+{
+  "matcher": "newest-first",
+  "seed": 20261126,
+  "dogs": 100,
+  "listings": 1139,
+  "trueListings": 139,
+  "recallAt5": 0,
+  "recallAt20": 0,
+  "medianRank": 363
+}
