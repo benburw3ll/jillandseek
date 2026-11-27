@@ -25,6 +25,22 @@ describe('the registry', () => {
     for (const e of registryEntries) expect(['automatic', 'capture', 'link']).toContain(e.access)
   })
 
+  it('holds all seven metro counties and the 10 largest other cities, each with access kind and check date', () => {
+    const ids = [
+      ...['anoka', 'carver', 'dakota', 'hennepin', 'ramsey', 'scott', 'washington'].map((c) => `${c}-county`),
+      ...['saint-paul', 'rochester', 'duluth', 'bloomington', 'brooklyn-park', 'plymouth', 'woodbury']
+        .concat(['maple-grove', 'blaine', 'lakeville'])
+        .map((c) => `${c}-animal-control`),
+    ]
+    for (const id of ids) {
+      const e = registryEntries.find((x) => x.id === id)
+      expect(e, id).toBeDefined()
+      expect(e?.access, id).toBeDefined()
+      expect(e?.checkedOn, id).toBe('2026-11-26')
+      expect(e?.checkNote, id).toBeTruthy()
+    }
+  })
+
   it('passes a fully checked automatic entry', () => {
     expect(checkRegistry([automatic], ['zorbulon-strays'])).toEqual([])
   })

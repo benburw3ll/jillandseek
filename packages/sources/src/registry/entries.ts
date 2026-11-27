@@ -5,6 +5,41 @@ import type { SourceEntryInput } from '@jillandseek/core'
 // Only checked facts go in `checkNote`; anything not checked says so. No person's name, and no
 // group's member details, ever go here.
 
+// What the robots files said on 2026-11-26 (#15), and what every link entry below has in common.
+const ADMIN = 'Robots disallow only admin, search and event-view paths.'
+const NO_ROBOTS = 'The site serves no robots file (404).'
+const REFUSED = 'Its robots file answered a plain request with 403, so the site is not read.'
+const CHALLENGE = 'Its robots file answered with a bot check (403), so the site is not read.'
+const NO_LIST = 'Terms were not read, and no page listing impounded dogs was found, so it stays a link.'
+
+function county(id: string, name: string, url: string, robots: string): SourceEntryInput {
+  return {
+    id,
+    name: `${name} animal control and shelters`,
+    url,
+    region: name,
+    listingKinds: ['shelter-stray'],
+    access: 'link',
+    checkedOn: '2026-11-26',
+    checkNote: `${robots} ${NO_LIST}`,
+    notes: 'The county site. Which page lists impounded dogs is not yet confirmed.',
+  }
+}
+
+function city(id: string, name: string, url: string, robots: string): SourceEntryInput {
+  return {
+    id: `${id}-animal-control`,
+    name: `${name} animal control`,
+    url,
+    region: name,
+    listingKinds: ['shelter-stray'],
+    access: 'link',
+    checkedOn: '2026-11-26',
+    checkNote: `${robots} ${NO_LIST}`,
+    notes: 'The city site. Which page lists impounded dogs is not yet confirmed.',
+  }
+}
+
 export const registryEntries: SourceEntryInput[] = [
   // The cities and shelters.
   {
@@ -39,17 +74,50 @@ export const registryEntries: SourceEntryInput[] = [
     region: 'Saint Paul',
     listingKinds: ['shelter-stray'],
     access: 'link',
+    checkedOn: '2026-11-26',
+    checkNote: `Robots allow the generic agent (rules list only theme files). ${NO_LIST}`,
     notes: 'The city site. The page that lists impounded dogs is not yet confirmed.',
   },
 
-  // The seven metro counties, as links until checked (#15).
-  county('anoka-county', 'Anoka County', 'https://www.anokacountymn.gov/'),
-  county('carver-county', 'Carver County', 'https://www.carvercountymn.gov/'),
-  county('dakota-county', 'Dakota County', 'https://www.co.dakota.mn.us/'),
-  county('hennepin-county', 'Hennepin County', 'https://www.hennepin.us/'),
-  county('ramsey-county', 'Ramsey County', 'https://www.ramseycounty.us/'),
-  county('scott-county', 'Scott County', 'https://www.scottcountymn.gov/'),
-  county('washington-county', 'Washington County', 'https://www.washingtoncountymn.gov/'),
+  // The seven metro counties (robots read on 2026-11-26, #15).
+  county('anoka-county', 'Anoka County', 'https://www.anokacountymn.gov/', ADMIN),
+  county('carver-county', 'Carver County', 'https://www.carvercountymn.gov/', REFUSED),
+  county('dakota-county', 'Dakota County', 'https://www.co.dakota.mn.us/', NO_ROBOTS),
+  county(
+    'hennepin-county',
+    'Hennepin County',
+    'https://www.hennepincounty.gov/',
+    'The old domain redirects here. Robots allow everything.',
+  ),
+  county(
+    'ramsey-county',
+    'Ramsey County',
+    'https://www.ramseycountymn.gov/',
+    'The old domain redirects here. Robots disallow search, admin, login, /sites/ and every .pdf and .aspx path.',
+  ),
+  county('scott-county', 'Scott County', 'https://www.scottcountymn.gov/', CHALLENGE),
+  county('washington-county', 'Washington County', 'https://www.washingtoncountymn.gov/', ADMIN),
+
+  // The 10 largest Minnesota cities after Minneapolis (Saint Paul is above; robots read on 2026-11-26, #15).
+  city(
+    'rochester',
+    'Rochester',
+    'https://www.rochestermn.gov/',
+    'Robots disallow only system paths (/bin/, /config/, /install/, /umbraco/, /views/, /sandbox/).',
+  ),
+  city('duluth', 'Duluth', 'https://duluthmn.gov/', NO_ROBOTS),
+  city(
+    'bloomington',
+    'Bloomington',
+    'https://www.bloomingtonmn.gov/',
+    'Robots allow the generic agent (rules list only theme files).',
+  ),
+  city('brooklyn-park', 'Brooklyn Park', 'https://www.brooklynpark.org/', 'Robots disallow only event-calendar views.'),
+  city('plymouth', 'Plymouth', 'https://www.plymouthmn.gov/', REFUSED),
+  city('woodbury', 'Woodbury', 'https://www.woodburymn.gov/', CHALLENGE),
+  city('maple-grove', 'Maple Grove', 'https://www.maplegrovemn.gov/', ADMIN),
+  city('blaine', 'Blaine', 'https://www.blainemn.gov/', ADMIN),
+  city('lakeville', 'Lakeville', 'https://www.lakevillemn.gov/', ADMIN),
 
   // Lost-pet sites and groups.
   {
@@ -88,6 +156,9 @@ export const registryEntries: SourceEntryInput[] = [
     region: 'national',
     listingKinds: ['lost', 'found'],
     access: 'link',
+    checkedOn: '2026-11-26',
+    checkNote:
+      'Robots allow everything for the generic agent. Its terms were not read and its listing pages not tried, so it stays a link.',
   },
   {
     id: 'facebook-groups',
@@ -132,15 +203,3 @@ export const registryEntries: SourceEntryInput[] = [
     checkNote: 'Robots disallow everything for the generic agent (ADR-0002), so it is not read.',
   },
 ]
-
-function county(id: string, name: string, url: string): SourceEntryInput {
-  return {
-    id,
-    name: `${name} animal control and shelters`,
-    url,
-    region: name,
-    listingKinds: ['shelter-stray'],
-    access: 'link',
-    notes: 'The county site. Which page lists impounded dogs is not yet confirmed.',
-  }
-}
