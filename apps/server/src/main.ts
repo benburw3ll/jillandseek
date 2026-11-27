@@ -7,6 +7,7 @@ import { createApp } from './app.ts'
 import { isWritable } from './db/home.ts'
 import { openStore, schedulePrune } from './db/store.ts'
 import { HOSTNAME, loadSettings, REPO_ROOT } from './settings.ts'
+import { syncRegistry } from './sweep/registry.ts'
 
 const mode = process.argv.includes('--dev') ? 'dev' : 'start'
 const settings = loadSettings(process.env, mode)
@@ -18,6 +19,7 @@ const version = (
 ).version
 const store = openStore({ home: settings.home, retention: settings.retention, now, log })
 schedulePrune(store, { now, log })
+syncRegistry(store.repo, log)
 
 const app = createApp({
   repo: store.repo,

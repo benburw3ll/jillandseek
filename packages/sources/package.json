@@ -6,9 +6,12 @@
   "description": "The source registry, the collectors and their one fetcher.",
   "exports": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "sources:check": "node scripts/sources-check.ts"
   },
   "dependencies": {
-    "@jillandseek/core": "workspace:*"
+    "@jillandseek/core": "workspace:*",
+    "node-html-parser": "9.0.7",
+    "zod": "4.6.7"
   }
 }
