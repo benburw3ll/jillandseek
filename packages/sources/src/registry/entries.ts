@@ -13,8 +13,13 @@ export const registryEntries: SourceEntryInput[] = [
     url: 'https://24petconnect.com/MACCStrayPets?at=DOG',
     region: 'Minneapolis',
     listingKinds: ['shelter-stray'],
-    access: 'link',
-    notes: 'The stray list is published on 24PetConnect. The collector arrives with #14.',
+    access: 'automatic',
+    collector: 'macc-strays',
+    checkedOn: '2026-11-26',
+    checkNote:
+      '24petconnect.com serves no robots file (404). Its terms of use (the PDF linked from the page, revised April 2017) allow downloading material for personal, non-commercial use and forbid use that could damage or impair the site; they say nothing against automated reading. The list page answered a plain request with no bot check and is titled "Stray Pets at MACC". Read at most once every 30 minutes, the list page only.',
+    notes:
+      "The stray list on 24PetConnect. On 2026-11-26 the page showed one tab, the strays, and no list of residents' found dogs.",
   },
   {
     id: 'animal-humane-society',
