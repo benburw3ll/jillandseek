@@ -6,15 +6,35 @@ It aims to beat the finders people use today on four measures the app can report
 
 ## Roadmap
 
-The table's order is the build order. Each outcome is a GitHub milestone, and its issues are the work list.
+The outcomes sit in lanes, and the order of the tables below is the build order. Each outcome is a GitHub milestone, and its issues are the work list. The Project's Milestones board shows the same lanes, with one card per milestone. The owner drags a card to change the order, and these tables follow the board.
+
+### Everyday
+
+What is being built now: v1, the version the owner uses first, and whatever using it turns up.
+
+| Outcome | What it gives the owner | Status |
+| --- | --- | --- |
+| O3 The first sources | A registry of every known source, a sweep on a schedule, and the first Minnesota collectors filling the database | Started |
+
+### Advanced
+
+v1.1. Each one builds on O4's matching and waits its turn after v1.
+
+| Outcome | What it gives the owner | Status |
+| --- | --- | --- |
+| O5 Watches that keep looking (v1.1) | A dog's search re-runs on every sweep and alerts the owner on a new match | Planned |
+| O6 The capture extension (v1.1) | A Chrome extension sends the posts on the page the person opened into Jill and Seek | Planned |
+
+### Later and parked
+
+None yet. Ideas not yet designed (photo matching, AI second looks, a source-finding agent, the public website, a nonprofit) are draft items on the Project with Version Later, and become outcomes only when the owner picks them.
+
+### Done
 
 | Outcome | What it gives the owner | Status |
 | --- | --- | --- |
 | O1 Decide the shape | Every decision the build rests on is an accepted ADR: purpose, sources, privacy, stack, records, AI | Done |
 | O2 The bare bones | The workspace, its gate, the database, the server and the site's first pages run on the owner's computer | Done |
-| O3 The first sources | A registry of every known source, a sweep on a schedule, and the first Minnesota collectors filling the database | Started |
 | O4 Search for a missing dog | Enter a missing dog and see every collected listing ranked against it, with reasons | Done |
-| O5 Watches that keep looking (v1.1) | A dog's search re-runs on every sweep and alerts the owner on a new match | Planned |
-| O6 The capture extension (v1.1) | A Chrome extension sends the posts on the page the person opened into Jill and Seek | Planned |
 
-O1 came first: its six ADRs were accepted on 2026-11-26, and nothing is built ahead of the ADR that binds it (AGENTS.md, hard rule 1). O2 to O4 are v1, the version the owner uses first, and are built in order, because each one reads what the one before it stores. O5 and O6 are v1.1: both build on O4's matching. Ideas not yet designed (photo matching, AI second looks, a source-finding agent, the public website, a nonprofit) are draft items on the Project with Version Later, and become outcomes only when the owner picks them.
+O1 came first: its six ADRs were accepted on 2026-11-26, and nothing is built ahead of the ADR that binds it (AGENTS.md, hard rule 1). O2 to O4 are v1 and were built in order, because each one reads what the one before it stores. O3 stays open while more sources are checked and read. O5 and O6 are v1.1: both build on O4's matching.
