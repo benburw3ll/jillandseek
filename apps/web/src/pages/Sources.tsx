@@ -1,6 +1,6 @@
 import type { Source, Sweep } from '@jillandseek/core'
 import { useEffect, useState } from 'react'
-import { fetchSources, type SourceList } from '../api/sources.ts'
+import { clearBlock, fetchSources, type SourceList } from '../api/sources.ts'
 import { fetchSweeps } from '../api/sweeps.ts'
 import { useLoad } from '../useLoad.ts'
 import './sources-pages.css'
@@ -31,6 +31,8 @@ function statusText(s: Source): string {
 export function Sources() {
   const load = useLoad<SourceList>((signal) => fetchSources(signal))
   const [lastSweep, setLastSweep] = useState<Sweep | null>(null)
+  /** Sources the owner cleared on this visit. */
+  const [cleared, setCleared] = useState<Set<string>>(new Set())
   useEffect(() => {
     const controller = new AbortController()
     fetchSweeps(controller.signal).then(
@@ -89,7 +91,12 @@ export function Sources() {
                     <td>{s.region}</td>
                     <td>{ACCESS_WORDS[s.access]}</td>
                     <td>{s.lastReadAt === null ? 'Never' : when(s.lastReadAt)}</td>
-                    <td>{statusText(s)}</td>
+                    <td>
+                      {statusText(cleared.has(s.id) ? { ...s, status: 'active' } : s)}
+                      {s.status === 'blocked' && !cleared.has(s.id) && (
+                        <ClearBlock source={s} onCleared={() => setCleared(new Set([...cleared, s.id]))} />
+                      )}
+                    </td>
                     <td>{load.data.listingCounts[s.id] ?? 0}</td>
                   </tr>
                 ))}
@@ -99,6 +106,45 @@ export function Sources() {
         </>
       )}
     </>
+  )
+}
+
+/**
+ * The owner's control for a blocked source (#35, ADR-0002 point 3): when and why it was blocked,
+ * a line to check the site's rules first, and a button that asks once before clearing. Clearing
+ * starts no read: the sweep reads the source when it is next due.
+ */
+function ClearBlock({ source: s, onCleared }: { source: Source; onCleared: () => void }) {
+  const [asking, setAsking] = useState(false)
+  const [problem, setProblem] = useState('')
+  const clear = async () => {
+    try {
+      await clearBlock(s.id)
+      onCleared()
+    } catch {
+      setProblem('The block could not be cleared. Check that Jill and Seek is running.')
+    }
+  }
+  return (
+    <div className="clear-block">
+      {s.blockedAt !== null && <p>Blocked since {when(s.blockedAt)}.</p>}
+      <p>Check the site's robots rules and terms first: a site's "no" is final.</p>
+      {asking ? (
+        <p className="clear-block__actions">
+          <button type="button" className="button" onClick={clear}>
+            Yes, clear the block for {s.name}
+          </button>
+          <button type="button" className="button button--quiet" onClick={() => setAsking(false)}>
+            Keep it blocked
+          </button>
+        </p>
+      ) : (
+        <button type="button" className="button button--quiet" onClick={() => setAsking(true)}>
+          Clear the block<span className="visually-hidden"> for {s.name}</span>
+        </button>
+      )}
+      {problem && <p role="alert">{problem}</p>}
+    </div>
   )
 }
 

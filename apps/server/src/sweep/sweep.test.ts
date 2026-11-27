@@ -166,6 +166,45 @@ describe('the sweep', () => {
     expect(s.lines.some((l) => l.includes('code=match-error'))).toBe(true)
   })
 
+  it('reads a source the owner cleared at its next due sweep, and refuses an unknown or unblocked one (#35)', async () => {
+    const s = setup([['Z-1']])
+    await s.sweep()
+    s.store.repo.blockSource('zorbulon-pound', 'http-429', new Date(T0).toISOString())
+    const logged: string[] = []
+    const app = createApp({
+      repo: s.store.repo,
+      now: () => new Date(T0),
+      version: '0.1.0',
+      schemaVersion: s.store.schemaVersion,
+      dataHomeWritable: () => true,
+      ports: [5200],
+      log: (l) => logged.push(l),
+    })
+    const clear = (id: string) =>
+      app.request(`http://127.0.0.1:5200/api/sources/${id}/clear-block`, {
+        method: 'POST',
+        headers: { host: '127.0.0.1:5200', 'content-type': 'application/json', 'x-jill-and-seek': '1' },
+        body: '{}',
+      })
+
+    s.advance(30 * MIN)
+    expect(await s.sweep()).toBeNull()
+    expect(s.reads()).toBe(1)
+
+    expect((await clear('no-such-source')).status).toBe(404)
+    const res = await clear('zorbulon-pound')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ status: 'active', blockedAt: null, blockedReason: null })
+    // Clearing starts no read and keeps the last read, so the 30-minute floor still holds.
+    expect(s.reads()).toBe(1)
+    expect(s.store.repo.getSource('zorbulon-pound')?.lastReadAt).toBe(new Date(T0).toISOString())
+    expect((await clear('zorbulon-pound')).status).toBe(409)
+    expect(logged.filter((l) => l.startsWith('sources:'))).toEqual(['sources: cleared block source=zorbulon-pound'])
+
+    await s.sweep()
+    expect(s.reads()).toBe(2)
+  })
+
   it('serves the sweeps and each source with its last read, status and listing count', async () => {
     const s = setup([['Z-1', 'Z-2']])
     await s.sweep()

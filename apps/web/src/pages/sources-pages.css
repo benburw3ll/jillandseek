@@ -179,3 +179,19 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The owner's control for a blocked source (#35). */
+.clear-block {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-small);
+}
+
+.clear-block p {
+  margin: 0 0 var(--space-2);
+}
+
+.clear-block__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
