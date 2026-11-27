@@ -103,6 +103,8 @@ export function DogPage({ id }: { id: number }) {
     try {
       setDog(await updateDog(id, { status }))
       setMessage(status === 'found' ? 'Marked found.' : 'Marked missing again.')
+      // Saving a missing dog re-runs matching on the server: show what it found.
+      if (status === 'missing') setMatches(await fetchMatches(id))
     } catch {
       setMessage('That could not be saved. Check that Jill and Seek is running.')
     }

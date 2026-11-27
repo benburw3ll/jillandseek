@@ -282,6 +282,15 @@ describe('matches', () => {
     expect(((await rerun.json()) as { ranAt: string }).ranAt).toBe('2026-01-12T12:00:00.000Z')
   })
 
+  it('keeps a saved dog when matching after the save fails', async () => {
+    const { request, store } = setup()
+    store.repo.matchDog = () => {
+      throw new Error('made-up failure')
+    }
+    const dog = await newDog(request)
+    expect(store.repo.getDog(dog.id)?.label).toBe('Zorbulon')
+  })
+
   it('answers 404 for the matches of a dog that is not there, and deletes a dog with its matches', async () => {
     const { request, store } = setup()
     withListings(store)

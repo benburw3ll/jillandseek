@@ -103,11 +103,21 @@ export function matchesRepository(db: DatabaseSync) {
       })
     },
 
-    /** Matches every missing dog at `now`, each in its own transaction. Returns how many dogs ran. */
-    matchMissingDogs(now: string): number {
+    /**
+     * Matches every missing dog at `now`, each in its own transaction, so one dog that fails
+     * keeps its last good matches and never stops the dogs after it.
+     */
+    matchMissingDogs(now: string): { dogs: number; failed: number } {
       const ids = (db.prepare("SELECT id FROM dogs WHERE status = 'missing'").all() as Row[]).map((r) => Number(r.id))
-      for (const id of ids) self.matchDog(id, now)
-      return ids.length
+      let failed = 0
+      for (const id of ids) {
+        try {
+          self.matchDog(id, now)
+        } catch {
+          failed++
+        }
+      }
+      return { dogs: ids.length, failed }
     },
   }
   return self

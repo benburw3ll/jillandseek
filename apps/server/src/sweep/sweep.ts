@@ -97,8 +97,8 @@ export async function runSweep(deps: SweepDeps): Promise<number | null> {
   if (counts.sourcesRead > 0) {
     const t0 = Date.now()
     try {
-      const dogs = deps.repo.matchMissingDogs(deps.now().toISOString())
-      deps.log(`sweep: id=${id} matched dogs=${dogs} ms=${Date.now() - t0}`)
+      const r = deps.repo.matchMissingDogs(deps.now().toISOString())
+      deps.log(`sweep: id=${id} matched dogs=${r.dogs} failed=${r.failed} ms=${Date.now() - t0}`)
     } catch {
       deps.log(`sweep: id=${id} matching failed code=match-error`)
     }

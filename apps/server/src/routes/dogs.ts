@@ -21,7 +21,7 @@ export function dogsRoutes(deps: RouteDeps & { log: Log }) {
     try {
       deps.repo.matchDog(id, now())
     } catch {
-      deps.log('match: failed code=match-error')
+      deps.log(`match: failed dog=${id} code=match-error`)
     }
   }
   return (

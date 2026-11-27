@@ -128,6 +128,14 @@ describe('scoreListing', () => {
     const farAway = scoreListing(dog, listing({ lat: 3 }), NOW).score
     const unplaced = scoreListing(dog, listing({ lat: null, lon: null, placePrecision: 'unknown' }), NOW).score
     expect(unplaced).toBeGreaterThanOrEqual(farAway)
+    const late = scoreListing(dog, listing({ postedAt: '2026-06-20T12:00:00.000Z' }), NOW).score
+    const undated = scoreListing(dog, listing({ postedAt: null, firstSeenAt: '2026-06-20T12:00:00.000Z' }), NOW)
+    expect(undated.score).toBeGreaterThanOrEqual(late)
+    expect(undated.reasons).toContain('The post gives no date, so time was not compared')
+    const unplacedDog = { ...dog, lat: null, lon: null, placePrecision: 'unknown' as const }
+    expect(scoreListing(unplacedDog, listing(), NOW).reasons[0]).toBe(
+      "Where she was last seen can't be placed on a map, so distance was not compared",
+    )
   })
 
   it('gives every match at least one reason, also one with nothing known', () => {

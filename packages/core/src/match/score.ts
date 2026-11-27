@@ -23,6 +23,7 @@ const BEFORE_GRACE_MS = DAY_MS
 /** The most points each part can add. Contradictions take away less than agreement adds. */
 const WEIGHT = {
   time: 2,
+  lateOff: 0.5,
   distance: 3,
   farOff: 0.5,
   breed: 2,
@@ -37,12 +38,28 @@ const WEIGHT = {
   ageOff: 0.75,
 } as const
 const MAX =
-  WEIGHT.time + WEIGHT.distance - WEIGHT.farOff + WEIGHT.breed + WEIGHT.color + WEIGHT.size + WEIGHT.sex + WEIGHT.age
-const MIN = -(WEIGHT.farOff + WEIGHT.breedOff + WEIGHT.colorOff + WEIGHT.sizeOff + WEIGHT.sexOff + WEIGHT.ageOff)
+  WEIGHT.time -
+  WEIGHT.lateOff +
+  WEIGHT.distance -
+  WEIGHT.farOff +
+  WEIGHT.breed +
+  WEIGHT.color +
+  WEIGHT.size +
+  WEIGHT.sex +
+  WEIGHT.age
+const MIN = -(
+  WEIGHT.lateOff +
+  WEIGHT.farOff +
+  WEIGHT.breedOff +
+  WEIGHT.colorOff +
+  WEIGHT.sizeOff +
+  WEIGHT.sexOff +
+  WEIGHT.ageOff
+)
 
 /** The evidence a band needs. A set-aside match is always weak; a weak one is still shown. */
-const STRONG_AT = 6
-const POSSIBLE_AT = 3.5
+const STRONG_AT = 5.5
+const POSSIBLE_AT = 3
 
 /** How many kilometres a place given only as a town or county may be off by. */
 const SLACK_KM: Record<PlacePrecision, number> = { point: 0, town: 3, county: 25, unknown: 0 }
@@ -106,18 +123,29 @@ function timePart(dog: Dog, listing: Listing): Part {
   const gap = listingTime(listing) - Date.parse(dog.lastSeenAt)
   // Dated before the dog went missing: set aside, and its own reason says so.
   if (gap < -BEFORE_GRACE_MS) return { points: 0, reason: null }
+  const who = pronoun(dog.traits.sex)
+  // A post with no date of its own is not compared on time: when a sweep first read it says
+  // nothing about when the dog was found or seen.
+  if (listing.postedAt === null) return { points: 0, reason: 'The post gives no date, so time was not compared' }
   const after = Math.max(0, gap)
   // Decays over weeks: a post two weeks after the dog went missing keeps about half its points.
-  const points = WEIGHT.time * Math.exp(-after / (20 * DAY_MS))
-  const who = pronoun(dog.traits.sex)
+  // A much later one takes a little away (down to -lateOff), so a post with no date never ranks
+  // below a late one.
+  const points = WEIGHT.time * Math.exp(-after / (20 * DAY_MS)) - WEIGHT.lateOff
   const when =
     after < DAY_MS ? `within a day of when ${who} was last seen` : `${span(after)} after ${who} was last seen`
   return { points, reason: `Posted ${when}` }
 }
 
 function distancePart(dog: Dog, listing: Listing): Part {
-  if (dog.lat === null || dog.lon === null || listing.lat === null || listing.lon === null) {
-    return { points: 0, reason: 'The post gives no place that can be placed on a map' }
+  if (dog.lat === null || dog.lon === null) {
+    return {
+      points: 0,
+      reason: `Where ${pronoun(dog.traits.sex)} was last seen can't be placed on a map, so distance was not compared`,
+    }
+  }
+  if (listing.lat === null || listing.lon === null) {
+    return { points: 0, reason: 'The post gives no place that can be placed on a map, so distance was not compared' }
   }
   const km = distanceKm({ lat: dog.lat, lon: dog.lon }, { lat: listing.lat, lon: listing.lon })
   const slack = SLACK_KM[dog.placePrecision] + SLACK_KM[listing.placePrecision]
