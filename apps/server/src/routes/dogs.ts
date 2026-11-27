@@ -7,7 +7,8 @@ import type { RouteDeps } from './deps.ts'
 // the local towns table. A photo is uploaded as its raw bytes (the guards let only this one route
 // take an image body, up to 5 MB) and read back only by a name in that dog's own list.
 
-const dogId = (text: string) => (/^[1-9]\d{0,15}$/.test(text) ? Number(text) : null)
+const dogId = (text: string) =>
+  Number.isSafeInteger(Number(text)) && /^[1-9]\d{0,15}$/.test(text) ? Number(text) : null
 
 export function dogsRoutes(deps: RouteDeps) {
   const now = () => deps.now().toISOString()

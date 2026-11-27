@@ -30,7 +30,7 @@ type Rng = ReturnType<typeof rng>
 
 /** Breeds, each with the words posts use for it: the first is the plain name. */
 export const BREEDS: Record<string, readonly string[]> = {
-  labrador: ['labrador retriever', 'lab', 'labrador', 'lab mix', 'black lab', 'yellow lab'],
+  labrador: ['labrador retriever', 'lab', 'labrador', 'lab mix', 'lab cross'],
   'german shepherd': ['german shepherd', 'shepherd', 'gsd', 'shepherd mix', 'german shepard'],
   'golden retriever': ['golden retriever', 'golden', 'retriever', 'golden mix'],
   husky: ['siberian husky', 'husky', 'husky mix', 'sibe'],

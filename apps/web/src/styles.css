@@ -334,8 +334,9 @@ button.button--danger {
   padding-left: var(--space-6);
 }
 
+/* Kept in the page when empty, so a screen reader hears what is added to it. */
 .status:empty {
-  display: none;
+  margin: 0;
 }
 
 .photos {

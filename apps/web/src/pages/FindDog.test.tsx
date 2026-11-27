@@ -108,6 +108,33 @@ describe('Find a dog', () => {
     fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'made-up note' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     await waitFor(() => expect(calls.some((c) => c.method === 'PATCH')).toBe(true))
-    expect(calls.find((c) => c.method === 'PATCH')?.body).toMatchObject({ notes: 'made-up note', lastSeenTown: 'Ada' })
+    const patch = calls.find((c) => c.method === 'PATCH')
+    expect(patch?.body).toMatchObject({ notes: 'made-up note', lastSeenTown: 'Ada' })
+    // The time field was not touched, so the saved time is not rewritten to whole minutes.
+    expect(patch?.body).not.toHaveProperty('lastSeenAt')
+  })
+
+  it('after a failed photo, saving again retries the photo on the same dog and never makes a second', async () => {
+    let photoTries = 0
+    const calls = api((m, p) => {
+      if (m === 'GET' && p === '/api/dogs') return { items: [] }
+      if (m === 'POST' && p === '/api/dogs') return dog()
+      if (m === 'PATCH' && p === '/api/dogs/7') return dog()
+      if (m === 'POST' && p === '/api/dogs/7/photos') return ++photoTries === 1 ? undefined : dog()
+      return undefined
+    })
+    renderAt('/find')
+    fireEvent.change(screen.getByLabelText('Minnesota town'), { target: { value: 'Ada' } })
+    fireEvent.change(screen.getByLabelText('Date and time'), { target: { value: '2026-01-10T06:00' } })
+    const photo = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'zorbulon.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText('Add photos'), { target: { files: [photo] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the dog' }))
+    expect(await screen.findByText(/1 photo\(s\) could not be/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    await waitFor(() => expect(photoTries).toBe(2))
+    expect(calls.filter((c) => c.method === 'POST' && c.path === '/api/dogs')).toHaveLength(1)
+    expect(calls.some((c) => c.method === 'PATCH' && c.path === '/api/dogs/7')).toBe(true)
+    // The photo goes as its own bytes with its image type, never as a form.
+    expect(calls.find((c) => c.path === '/api/dogs/7/photos')?.headers['content-type']).toBe('image/png')
   })
 })

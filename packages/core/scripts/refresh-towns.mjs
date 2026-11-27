@@ -19,7 +19,7 @@ const SUFFIX = / (city|CDP)$/
 async function readSource(path) {
   if (path !== undefined) return readFileSync(path, 'utf8')
   const res = await fetch(URL_, {
-    headers: { 'user-agent': 'JillAndSeek-towns-refresh (+https://github.com/benburw3ll/jillandseek)' },
+    headers: { 'user-agent': 'JillAndSeek/0.1.0 (+https://github.com/benburw3ll/jillandseek)' },
   })
   if (!res.ok) throw new Error(`the Census Bureau answered ${res.status}`)
   return res.text()

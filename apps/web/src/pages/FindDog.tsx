@@ -128,8 +128,12 @@ function NewDog() {
         Describe the missing dog: where and when it was last seen, and what it looks like. Unknown is fine for anything
         the post doesn't say.
       </p>
+      {/* Outside the keyed form, so the live region stays and its message is read out. */}
+      <p className="status" role="status">
+        {saved > 0 ? 'The dog was saved.' : ''}
+      </p>
       {/* A new key after each save gives an empty form and a fresh list. */}
-      <DogFormView key={`form-${saved}`} onSaved={() => setSaved((n) => n + 1)} savedCount={saved} />
+      <DogFormView key={`form-${saved}`} onSaved={() => setSaved((n) => n + 1)} />
       <h2 className="section-title">Your dogs</h2>
       <DogList key={`list-${saved}`} />
     </>
@@ -152,12 +156,15 @@ function EditDog({ id }: { id: number }) {
   )
 }
 
-function DogFormView({ dog, onSaved, savedCount = 0 }: { dog?: Dog; onSaved: () => void; savedCount?: number }) {
-  const [fields, setFields] = useState<Fields>(dog ? fieldsOf(dog) : EMPTY)
-  const [photos, setPhotos] = useState<string[]>(dog?.photos ?? [])
+function DogFormView({ dog: given, onSaved }: { dog?: Dog; onSaved: () => void }) {
+  // The dog as last saved. A new dog becomes an edit once it is created, so a retry after a
+  // failed photo changes that dog instead of creating a second one.
+  const [dog, setDog] = useState<Dog | undefined>(given)
+  const [fields, setFields] = useState<Fields>(given ? fieldsOf(given) : EMPTY)
+  const [photos, setPhotos] = useState<string[]>(given?.photos ?? [])
   const [files, setFiles] = useState<File[]>([])
   const [problems, setProblems] = useState<{ field: keyof Fields | 'photos'; text: string }[]>([])
-  const [status, setStatus] = useState<string>(savedCount > 0 ? 'The dog was saved.' : '')
+  const [status, setStatus] = useState<string>('')
   const [busy, setBusy] = useState(false)
   const summary = useRef<HTMLDivElement>(null)
   const room = MAX_PHOTOS - photos.length
@@ -209,17 +216,26 @@ function DogFormView({ dog, onSaved, savedCount = 0 }: { dog?: Dog; onSaved: () 
     setBusy(true)
     setProblems([])
     try {
-      const saved = dog ? await updateDog(dog.id, body) : await createDog(body)
-      let failed = 0
+      let saved: Dog
+      if (dog) {
+        // A minutes-only time field would rewrite the saved seconds, so the time goes only when changed.
+        const { lastSeenAt: _time, ...rest } = body
+        saved = await updateDog(dog.id, fields.seen === fieldsOf(dog).seen ? rest : body)
+      } else saved = await createDog(body)
+      setDog(saved)
+      setPhotos(saved.photos)
+      const failed: File[] = []
       for (const file of files) {
         try {
-          await uploadPhoto(saved.id, file)
+          setPhotos((await uploadPhoto(saved.id, file)).photos)
         } catch {
-          failed++
+          failed.push(file)
         }
       }
-      if (failed > 0) {
-        setStatus(`The dog was saved, but ${failed} photo(s) could not be. Try adding them again from Edit.`)
+      if (failed.length > 0) {
+        // Only the photos that failed stay picked, so saving again retries just those.
+        setFiles(failed)
+        setStatus(`The dog was saved, but ${failed.length} photo(s) could not be. Save again to retry them.`)
         setBusy(false)
         return
       }
@@ -250,7 +266,16 @@ function DogFormView({ dog, onSaved, savedCount = 0 }: { dog?: Dog; onSaved: () 
           <ul>
             {problems.map((p) => (
               <li key={p.field}>
-                <a href={`#dog-${p.field}`}>{p.text}</a>
+                <a
+                  href={`#dog-${p.field}`}
+                  onClick={(e) => {
+                    // Move focus to the field itself, not only scroll to it.
+                    e.preventDefault()
+                    document.getElementById(`dog-${p.field}`)?.focus()
+                  }}
+                >
+                  {p.text}
+                </a>
               </li>
             ))}
           </ul>
@@ -280,7 +305,7 @@ function DogFormView({ dog, onSaved, savedCount = 0 }: { dog?: Dog; onSaved: () 
             aria-describedby={describedBy('town', 'dog-town-hint')}
           />
           <p id="dog-town-hint" className="field__hint">
-            Start typing and pick from the list. The town places the dog on the map; no address is looked up.
+            Start typing and pick from the list. The town places the dog at that town; no address is looked up.
           </p>
           {problemFor('town')}
           <datalist id="mn-towns">

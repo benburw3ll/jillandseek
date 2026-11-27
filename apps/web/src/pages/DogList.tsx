@@ -9,6 +9,9 @@ import { useLoad } from '../useLoad.ts'
 
 const day = (moment: string) => moment.slice(0, 10)
 
+/** Focuses an element after React has drawn it, so a button that swaps never drops focus to the page. */
+const focusLater = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus())
+
 export function DogList() {
   const load = useLoad((signal) => fetchDogs(signal))
   const [dogs, setDogs] = useState<Dog[] | null>(null)
@@ -21,6 +24,7 @@ export function DogList() {
   const mark = async (dog: Dog, status: Dog['status']) => {
     try {
       replace(await updateDog(dog.id, { status }))
+      focusLater(`dog-${dog.id}-status`)
       setMessage(
         status === 'found'
           ? 'Marked found. It and its photos are deleted after the set number of days (30 unless changed).'
@@ -37,6 +41,7 @@ export function DogList() {
       setDogs((list ?? []).filter((d) => d.id !== dog.id))
       setConfirming(null)
       setMessage('The dog and its photos were deleted.')
+      focusLater('dogs-status')
     } catch {
       setMessage('The dog could not be deleted. Check that Jill and Seek is running.')
     }
@@ -44,7 +49,7 @@ export function DogList() {
 
   return (
     <>
-      <p className="status" role="status">
+      <p className="status" role="status" id="dogs-status" tabIndex={-1}>
         {message}
       </p>
       {load.state === 'loading' && <p aria-busy="true">Loading your dogs…</p>}
@@ -72,25 +77,55 @@ export function DogList() {
                     Edit<span className="visually-hidden"> {name}</span>
                   </Link>
                   {dog.status === 'missing' ? (
-                    <button type="button" className="button button--quiet" onClick={() => mark(dog, 'found')}>
+                    <button
+                      type="button"
+                      id={`dog-${dog.id}-status`}
+                      className="button button--quiet"
+                      onClick={() => mark(dog, 'found')}
+                    >
                       Mark found<span className="visually-hidden"> {name}</span>
                     </button>
                   ) : (
-                    <button type="button" className="button button--quiet" onClick={() => mark(dog, 'missing')}>
+                    <button
+                      type="button"
+                      id={`dog-${dog.id}-status`}
+                      className="button button--quiet"
+                      onClick={() => mark(dog, 'missing')}
+                    >
                       Mark missing again<span className="visually-hidden"> {name}</span>
                     </button>
                   )}
                   {confirming === dog.id ? (
                     <>
-                      <button type="button" className="button button--danger" onClick={() => remove(dog)}>
+                      <button
+                        type="button"
+                        id={`dog-${dog.id}-confirm`}
+                        className="button button--danger"
+                        onClick={() => remove(dog)}
+                      >
                         Yes, delete {name} and its photos
                       </button>
-                      <button type="button" className="button button--quiet" onClick={() => setConfirming(null)}>
+                      <button
+                        type="button"
+                        className="button button--quiet"
+                        onClick={() => {
+                          setConfirming(null)
+                          focusLater(`dog-${dog.id}-delete`)
+                        }}
+                      >
                         Keep it
                       </button>
                     </>
                   ) : (
-                    <button type="button" className="button button--quiet" onClick={() => setConfirming(dog.id)}>
+                    <button
+                      type="button"
+                      id={`dog-${dog.id}-delete`}
+                      className="button button--quiet"
+                      onClick={() => {
+                        setConfirming(dog.id)
+                        focusLater(`dog-${dog.id}-confirm`)
+                      }}
+                    >
                       Delete<span className="visually-hidden"> {name}</span>
                     </button>
                   )}
