@@ -3,6 +3,7 @@
 export * from './dog.ts'
 export * from './kinds.ts'
 export * from './listing.ts'
+export * from './match/index.ts'
 export * from './match.ts'
 export * from './source.ts'
 export * from './sweep.ts'

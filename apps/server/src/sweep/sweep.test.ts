@@ -95,9 +95,10 @@ describe('the sweep', () => {
     expect(s.store.repo.getSource('zorbulon-pound')?.lastReadAt).toBe(new Date(T0).toISOString())
 
     s.advance(29 * MIN)
-    await s.sweep()
+    // Nothing is due: the tick reads nothing and writes no sweeps row.
+    expect(await s.sweep()).toBeNull()
     expect(s.reads()).toBe(1)
-    expect(s.store.repo.listSweeps()[0]?.counts.sourcesDue).toBe(0)
+    expect(s.store.repo.listSweeps()).toHaveLength(1)
 
     s.advance(1 * MIN)
     await s.sweep()
@@ -131,10 +132,78 @@ describe('the sweep', () => {
       expect(s.store.repo.listSweeps()[0]?.errors).toEqual([{ sourceId: 'zorbulon-pound', code: `blocked-${reason}` }])
       s.store.repo.syncSources([entry])
       s.advance(24 * 60 * MIN)
-      await s.sweep()
-      expect(s.store.repo.listSweeps()[0]?.counts.sourcesDue).toBe(0)
+      expect(await s.sweep()).toBeNull()
+      expect(s.store.repo.listSweeps()).toHaveLength(1)
     },
   )
+
+  it('matches every missing dog after a sweep that read a source, and not after a tick with nothing due', async () => {
+    const s = setup([['Z-1', 'Z-2']])
+    const made = s.store.repo.createDog(
+      { lastSeenAt: new Date(T0 - 2 * 24 * 60 * MIN).toISOString(), lastSeenTown: 'Example Town' },
+      new Date(T0).toISOString(),
+    )
+    await s.sweep()
+    const first = s.store.repo.listMatches(made.id)
+    expect(first).toHaveLength(2)
+    for (const m of first) {
+      expect(m.computedAt).toBe(new Date(T0).toISOString())
+      expect(m.reasons.length).toBeGreaterThan(0)
+    }
+    s.advance(10 * MIN)
+    await s.sweep()
+    expect(s.store.repo.listMatches(made.id)[0]?.computedAt).toBe(new Date(T0).toISOString())
+  })
+
+  it('keeps the stored listings and the sweep when matching fails', async () => {
+    const s = setup([['Z-1']])
+    s.store.repo.matchMissingDogs = () => {
+      throw new Error('made-up failure')
+    }
+    const id = await s.sweep()
+    expect(id).not.toBeNull()
+    expect(s.store.repo.listListings().items).toHaveLength(1)
+    expect(s.lines.some((l) => l.includes('code=match-error'))).toBe(true)
+  })
+
+  it('reads a source the owner cleared at its next due sweep, and refuses an unknown or unblocked one (#35)', async () => {
+    const s = setup([['Z-1']])
+    await s.sweep()
+    s.store.repo.blockSource('zorbulon-pound', 'http-429', new Date(T0).toISOString())
+    const logged: string[] = []
+    const app = createApp({
+      repo: s.store.repo,
+      now: () => new Date(T0),
+      version: '0.1.0',
+      schemaVersion: s.store.schemaVersion,
+      dataHomeWritable: () => true,
+      ports: [5200],
+      log: (l) => logged.push(l),
+    })
+    const clear = (id: string) =>
+      app.request(`http://127.0.0.1:5200/api/sources/${id}/clear-block`, {
+        method: 'POST',
+        headers: { host: '127.0.0.1:5200', 'content-type': 'application/json', 'x-jill-and-seek': '1' },
+        body: '{}',
+      })
+
+    s.advance(30 * MIN)
+    expect(await s.sweep()).toBeNull()
+    expect(s.reads()).toBe(1)
+
+    expect((await clear('no-such-source')).status).toBe(404)
+    const res = await clear('zorbulon-pound')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ status: 'active', blockedAt: null, blockedReason: null })
+    // Clearing starts no read and keeps the last read, so the 30-minute floor still holds.
+    expect(s.reads()).toBe(1)
+    expect(s.store.repo.getSource('zorbulon-pound')?.lastReadAt).toBe(new Date(T0).toISOString())
+    expect((await clear('zorbulon-pound')).status).toBe(409)
+    expect(logged.filter((l) => l.startsWith('sources:'))).toEqual(['sources: cleared block source=zorbulon-pound'])
+
+    await s.sweep()
+    expect(s.reads()).toBe(2)
+  })
 
   it('serves the sweeps and each source with its last read, status and listing count', async () => {
     const s = setup([['Z-1', 'Z-2']])

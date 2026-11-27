@@ -92,7 +92,7 @@ export function sourcesRepository(db: DatabaseSync) {
       )
     },
 
-    /** The owner's clearing of a block. No route calls it yet. */
+    /** The owner's clearing of a block, from POST /api/sources/:id/clear-block (#35). */
     clearBlock(id: string): void {
       db.prepare(
         "UPDATE sources SET status = 'active', blocked_at = NULL, blocked_reason = NULL WHERE id = ? AND status = 'blocked'",

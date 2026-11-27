@@ -37,10 +37,15 @@ export function dueCollectors(deps: Pick<SweepDeps, 'repo' | 'collectors' | 'now
   })
 }
 
-/** Runs one sweep and returns its id. */
-export async function runSweep(deps: SweepDeps): Promise<number> {
+/**
+ * Runs one sweep and returns its id, or null when no source was due: a tick with nothing due
+ * writes no sweeps row and starts no matching. After a sweep that read at least one source,
+ * every missing dog is matched again (#19).
+ */
+export async function runSweep(deps: SweepDeps): Promise<number | null> {
   const started = deps.now()
   const due = dueCollectors(deps)
+  if (due.length === 0) return null
   const id = deps.repo.startSweep(started.toISOString())
   const counts = { ...emptySweepCounts(), sourcesDue: due.length }
   const errors: SweepError[] = []
@@ -86,6 +91,17 @@ export async function runSweep(deps: SweepDeps): Promise<number> {
     deps.log(
       `sweep: id=${id} due=${counts.sourcesDue} read=${counts.sourcesRead} new=${counts.listingsNew} gone=${counts.listingsGone} errors=${errors.length}`,
     )
+  }
+  // The listings are stored before matching starts, so a failed matching run loses nothing: the
+  // last good matches stay, and the next sweep or a dog's save runs it again.
+  if (counts.sourcesRead > 0) {
+    const t0 = Date.now()
+    try {
+      const r = deps.repo.matchMissingDogs(deps.now().toISOString())
+      deps.log(`sweep: id=${id} matched dogs=${r.dogs} failed=${r.failed} ms=${Date.now() - t0}`)
+    } catch {
+      deps.log(`sweep: id=${id} matching failed code=match-error`)
+    }
   }
   return id
 }

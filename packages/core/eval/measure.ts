@@ -1,5 +1,6 @@
 import type { Dog } from '../src/dog.ts'
 import type { Listing } from '../src/listing.ts'
+import { rankScored, scoreListing } from '../src/match/score.ts'
 import type { EvalSet } from './generate.ts'
 
 // How well a matcher ranks the true listings of the synthetic set (#18). Recall at 20 is one
@@ -16,6 +17,12 @@ export const newestFirst: Matcher = (_dog, listings) =>
       return at(b) < at(a) ? -1 : at(b) > at(a) ? 1 : a.id - b.id
     })
     .map((l) => l.id)
+
+/** The matcher of #19 at a fixed "now": every listing scored, best first, set-aside ones last. */
+export const scoredAt =
+  (now: string): Matcher =>
+  (dog, listings) =>
+    rankScored(listings.map((l) => ({ listingId: l.id, ...scoreListing(dog, l, now) }))).map((s) => s.listingId)
 
 export type Figures = {
   seed: number
