@@ -2,6 +2,8 @@
 
 Research for issue #15, done on 2026-11-26. The registry (`packages/sources/src/registry/entries.ts`) holds each source's access kind, `checkedOn` and `checkNote`; this page sums it up. `pnpm sources:check` keeps the registry honest.
 
+A wider list of places not yet in the registry, gathered on 2026-11-27, is in [source-candidates.md](source-candidates.md). Nothing on it is cleared for reading.
+
 ## How it was checked
 
 - Each site's public `robots.txt` was read once, at human pace (about one request every two seconds), with Jill and Seek's own User-Agent `JillAndSeek/0.1.0 (+https://github.com/benburw3ll/jillandseek)`.
