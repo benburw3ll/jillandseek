@@ -1,4 +1,5 @@
-import type { MiddlewareHandler } from 'hono'
+import { MAX_PHOTO_BYTES, PHOTO_TYPES } from '@jillandseek/core'
+import type { Context, MiddlewareHandler } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { jsonError } from './errors.ts'
 
@@ -10,11 +11,19 @@ import { jsonError } from './errors.ts'
 // - a state-changing request must be JSON with the X-Jill-And-Seek header, which a form can't
 //   send and a cross-site script can't send without a CORS preflight this server never allows;
 // - bodies are capped at 1 MB.
+// The one exception is a photo upload (POST /api/dogs/:id/photos): its body is the raw image,
+// typed image/jpeg, image/png or image/webp, capped at 5 MB, and it still needs the header.
+// No multipart and no form: every other route stays JSON-only at 1 MB.
 
 export const CUSTOM_HEADER = 'x-jill-and-seek'
 export const MAX_BODY_BYTES = 1024 * 1024
+export { MAX_PHOTO_BYTES }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD'])
+
+/** The one route that takes an image body: exactly POST /api/dogs/<id>/photos. */
+const PHOTO_UPLOAD = /^\/api\/dogs\/[1-9]\d{0,15}\/photos$/
+export const isPhotoUpload = (c: Context) => c.req.method === 'POST' && PHOTO_UPLOAD.test(c.req.path)
 
 /** The app's own hosts: 127.0.0.1 and localhost on each of its ports. */
 export function ownHosts(ports: number[]): Set<string> {
@@ -42,17 +51,20 @@ export const sameOriginApi: MiddlewareHandler = async (c, next) => {
   await next()
 }
 
-/** A state-changing request needs a JSON body and the custom header. */
+/** A state-changing request needs the custom header and a JSON body (an image on the photo route). */
 export const stateChange: MiddlewareHandler = async (c, next) => {
   if (SAFE_METHODS.has(c.req.method)) return next()
   if (c.req.header(CUSTOM_HEADER) !== '1') return jsonError(c, 403, 'missing-header')
   const type = c.req.header('content-type')?.split(';')[0]?.trim().toLowerCase()
-  if (type !== 'application/json') return jsonError(c, 415, 'json-only')
+  if (isPhotoUpload(c)) {
+    if (type === undefined || !Object.hasOwn(PHOTO_TYPES, type)) return jsonError(c, 415, 'image-only')
+  } else if (type !== 'application/json') return jsonError(c, 415, 'json-only')
   await next()
 }
 
-/** Caps a request body at 1 MB, whether or not it says its length. */
-export const capBody: MiddlewareHandler = bodyLimit({
-  maxSize: MAX_BODY_BYTES,
-  onError: (c) => jsonError(c, 413, 'too-large'),
-})
+const tooLarge = (c: Context) => jsonError(c, 413, 'too-large')
+const capJson = bodyLimit({ maxSize: MAX_BODY_BYTES, onError: tooLarge })
+const capPhoto = bodyLimit({ maxSize: MAX_PHOTO_BYTES, onError: tooLarge })
+
+/** Caps a request body at 1 MB (5 MB on the photo route), whether or not it says its length. */
+export const capBody: MiddlewareHandler = (c, next) => (isPhotoUpload(c) ? capPhoto(c, next) : capJson(c, next))

@@ -15,7 +15,7 @@ export function createRepository(db: DatabaseSync, options: { photosDir: string;
     ...sourcesRepository(db),
     ...sweepsRepository(db),
     ...listingsRepository(db),
-    ...dogsRepository(db),
+    ...dogsRepository(db, options.photosDir),
     ...matchesRepository(db),
     ...pruneRepository(db, options.photosDir, options.retention),
 

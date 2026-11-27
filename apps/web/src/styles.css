@@ -222,6 +222,153 @@ td {
   border: 0;
 }
 
+/* Find a dog: the form, one column on a phone. */
+
+button.button {
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 2.75rem;
+}
+
+button.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button.button--quiet {
+  background: transparent;
+  color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+button.button--danger {
+  background: #9b2c2c;
+}
+
+.section-title {
+  margin-top: var(--space-8);
+}
+
+.dog-form {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 42rem;
+}
+
+.dog-form fieldset {
+  margin: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.dog-form legend {
+  font-weight: 600;
+  padding: 0 var(--space-1);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-muted);
+  border-radius: var(--radius);
+}
+
+.field input[type="file"] {
+  border-style: dashed;
+}
+
+.field input[aria-invalid="true"] {
+  border: 2px solid #9b2c2c;
+}
+
+.field__hint,
+.field__problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-muted);
+}
+
+.field__problem {
+  color: #9b2c2c;
+  font-weight: 600;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-4);
+}
+
+.problems {
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid #9b2c2c;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.problems ul {
+  margin: 0;
+  padding-left: var(--space-6);
+}
+
+.status:empty {
+  display: none;
+}
+
+.photos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.photos li {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.photos img {
+  width: 6rem;
+  height: 6rem;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+
+.dog-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
 @media (max-width: 30rem) {
   h1 {
     font-size: 1.5rem;
@@ -229,5 +376,9 @@ td {
 
   .page {
     padding-top: var(--space-4);
+  }
+
+  .dog-form fieldset {
+    padding: var(--space-2) var(--space-3) var(--space-3);
   }
 }

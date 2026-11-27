@@ -230,8 +230,11 @@ describe('pruneExpired', () => {
     repo.updateDog(foundLong.id, { status: 'found' }, at(10))
     repo.updateDog(foundLately.id, { status: 'found' }, at(80))
     mkdirSync(home.photosDir, { recursive: true })
-    writeFileSync(join(home.photosDir, 'zorbulon-1.jpg'), 'made-up bytes')
-    db.prepare('UPDATE dogs SET photos = ? WHERE id = ?').run(JSON.stringify(['zorbulon-1.jpg']), foundLong.id)
+    writeFileSync(join(home.photosDir, 'dddddddddddddddddddddddddddddddd.jpg'), 'made-up bytes')
+    db.prepare('UPDATE dogs SET photos = ? WHERE id = ?').run(
+      JSON.stringify(['dddddddddddddddddddddddddddddddd.jpg']),
+      foundLong.id,
+    )
     const addMatch = db.prepare(
       "INSERT INTO matches (dog_id, listing_id, score, band, reasons, computed_at) VALUES (?, ?, 0.5, 'possible', '[]', ?)",
     )
@@ -247,21 +250,36 @@ describe('pruneExpired', () => {
     expect(repo.getDog(foundLately.id)).not.toBeNull()
     expect(repo.getDog(missing.id)).not.toBeNull()
     expect(repo.counts().matches).toBe(0)
-    expect(existsSync(join(home.photosDir, 'zorbulon-1.jpg'))).toBe(false)
+    expect(existsSync(join(home.photosDir, 'dddddddddddddddddddddddddddddddd.jpg'))).toBe(false)
   })
 
-  it('removes a photo no dog names once it is a day old, and nothing else', () => {
+  it('removes a photo no dog names once it is a day old, and nothing else (a stray notes.txt stays)', () => {
     const { db, home, repo } = open()
     const dog = repo.createDog({ lastSeenAt: at(1), lastSeenTown: 'Quuxville' }, at(1))
-    db.prepare('UPDATE dogs SET photos = ? WHERE id = ?').run(JSON.stringify(['kept.jpg']), dog.id)
-    for (const name of ['kept.jpg', 'orphan-old.jpg', 'orphan-new.jpg']) {
+    db.prepare('UPDATE dogs SET photos = ? WHERE id = ?').run(
+      JSON.stringify(['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg']),
+      dog.id,
+    )
+    for (const name of [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg',
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg',
+      'cccccccccccccccccccccccccccccccc.png',
+      'notes.txt',
+    ]) {
       writeFileSync(join(home.photosDir, name), 'made-up bytes')
     }
     const old = new Date('2026-01-01T00:00:00.000Z')
-    utimesSync(join(home.photosDir, 'kept.jpg'), old, old)
-    utimesSync(join(home.photosDir, 'orphan-old.jpg'), old, old)
-    const now = new Date(statSync(join(home.photosDir, 'orphan-new.jpg')).mtimeMs + 60_000).toISOString()
+    utimesSync(join(home.photosDir, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg'), old, old)
+    utimesSync(join(home.photosDir, 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg'), old, old)
+    utimesSync(join(home.photosDir, 'notes.txt'), old, old)
+    const now = new Date(
+      statSync(join(home.photosDir, 'cccccccccccccccccccccccccccccccc.png')).mtimeMs + 60_000,
+    ).toISOString()
     expect(repo.pruneExpired(now)).toMatchObject({ dogs: 0, photos: 1, photoErrors: 0 })
-    expect(readdirSync(home.photosDir).sort()).toEqual(['kept.jpg', 'orphan-new.jpg'])
+    expect(readdirSync(home.photosDir).sort()).toEqual([
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg',
+      'cccccccccccccccccccccccccccccccc.png',
+      'notes.txt',
+    ])
   })
 })

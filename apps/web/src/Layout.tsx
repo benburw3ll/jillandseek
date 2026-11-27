@@ -8,6 +8,10 @@ const NAV = [
   { href: '/sources', label: 'Sources' },
 ]
 
+/** A nav item is current on its own page and on the pages under it (Find a dog's /find/:id). */
+const current = (location: string, href: string) =>
+  location === href || (href !== '/' && location.startsWith(`${href}/`))
+
 /** The header with the name and the navigation, around every page. */
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation()
@@ -25,7 +29,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <ul className="nav">
               {NAV.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} aria-current={location === item.href ? 'page' : undefined}>
+                  <Link href={item.href} aria-current={current(location, item.href) ? 'page' : undefined}>
                     {item.label}
                   </Link>
                 </li>

@@ -6,7 +6,8 @@
   "description": "The records, their zod schemas and matching. Pure: no I/O and no clock reads.",
   "exports": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "towns:refresh": "node scripts/refresh-towns.mjs"
   },
   "dependencies": {
     "zod": "4.6.7"
