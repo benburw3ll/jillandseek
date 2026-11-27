@@ -1,8 +1,22 @@
 import type { DatabaseSync, SQLInputValue } from 'node:sqlite'
-import { Dog, DogInput, type DogInputBody, DogPatch, type DogStatus, Instant } from '@jillandseek/core'
-import { json, type Row } from './rows.ts'
+import {
+  Dog,
+  DogInput,
+  type DogInputBody,
+  DogPatch,
+  type DogStatus,
+  Instant,
+  MAX_PHOTOS,
+  type PhotoType,
+} from '@jillandseek/core'
+import { photoStore } from './photos.ts'
+import { json, type Row, transaction } from './rows.ts'
 
-// The dogs table: the missing dogs the owner is searching for.
+// The dogs table: the missing dogs the owner is searching for, and their photo files.
+
+export type AddPhotoResult =
+  | { ok: true; dog: Dog; name: string }
+  | { ok: false; error: 'not-found' | 'not-an-image' | 'too-many-photos' }
 
 export function dogFromRow(row: Row): Dog {
   return Dog.parse({
@@ -44,14 +58,78 @@ function dogColumns(d: Omit<Dog, 'id' | 'createdAt'>): Record<string, SQLInputVa
   }
 }
 
-export function dogsRepository(db: DatabaseSync) {
+export function dogsRepository(db: DatabaseSync, photosDir: string) {
+  const photos = photoStore(photosDir)
   const getDog = (id: number): Dog | null => {
     const row = db.prepare('SELECT * FROM dogs WHERE id = ?').get(id) as Row | undefined
     return row ? dogFromRow(row) : null
   }
+  const setPhotos = (id: number, names: string[], now: string) =>
+    db.prepare('UPDATE dogs SET photos = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(names), now, id)
 
   return {
     getDog,
+
+    /**
+     * Saves a photo's bytes for a dog. The file is written first and the row after; if the row
+     * can't be written, the file is removed again, so no saved dog ever names a missing file.
+     */
+    addPhoto(id: number, bytes: Uint8Array, now: string): AddPhotoResult {
+      Instant.parse(now)
+      const type: PhotoType | null = photos.detect(bytes)
+      if (type === null) return { ok: false, error: 'not-an-image' }
+      const dog = getDog(id)
+      if (dog === null) return { ok: false, error: 'not-found' }
+      if (dog.photos.length >= MAX_PHOTOS) return { ok: false, error: 'too-many-photos' }
+      const name = photos.save(bytes, type)
+      try {
+        setPhotos(id, [...dog.photos, name], now)
+      } catch (error) {
+        photos.remove(name)
+        throw error
+      }
+      return { ok: true, dog: getDog(id) as Dog, name }
+    },
+
+    /** The photo's bytes and type, only when the name is one of this dog's photos. */
+    readPhoto(id: number, name: string): { bytes: Uint8Array<ArrayBuffer>; type: PhotoType } | null {
+      const dog = getDog(id)
+      if (dog === null || !dog.photos.includes(name)) return null
+      return photos.read(name)
+    },
+
+    /**
+     * Takes a photo off a dog, or returns null when the dog has no such photo. The row changes
+     * first; a file whose removal fails has no dog naming it, so the prune removes it later.
+     */
+    removePhoto(id: number, name: string, now: string): Dog | null {
+      Instant.parse(now)
+      const dog = getDog(id)
+      if (dog === null || !dog.photos.includes(name)) return null
+      setPhotos(
+        id,
+        dog.photos.filter((p) => p !== name),
+        now,
+      )
+      photos.remove(name)
+      return getDog(id)
+    },
+
+    /**
+     * Deletes a dog by hand, with its matches and its photo files; false when there is no such
+     * dog. The row goes first, as in the prune, so a failed file removal never brings a dog back.
+     */
+    deleteDog(id: number): boolean {
+      const names = transaction(db, () => {
+        const dog = getDog(id)
+        if (dog === null) return null
+        db.prepare('DELETE FROM dogs WHERE id = ?').run(id)
+        return dog.photos
+      })
+      if (names === null) return false
+      for (const name of names) photos.remove(name)
+      return true
+    },
 
     /** Stores a new missing dog and returns it. */
     createDog(input: DogInputBody, now: string): Dog {

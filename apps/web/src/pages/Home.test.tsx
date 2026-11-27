@@ -38,10 +38,10 @@ describe('Home', () => {
 })
 
 describe('Find a dog', () => {
-  it('is a placeholder until O4 builds the form', () => {
-    fakeApi({})
+  it('holds the form for a missing dog', () => {
+    fakeApi({ '/api/dogs': { items: [] } })
     renderAt('/find')
     expect(screen.getByRole('heading', { level: 1, name: 'Find a dog' })).toBeTruthy()
-    expect(screen.getByText(/Not built yet/)).toBeTruthy()
+    expect(screen.getByLabelText('Minnesota town')).toBeTruthy()
   })
 })

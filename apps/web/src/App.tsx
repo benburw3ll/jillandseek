@@ -12,7 +12,10 @@ export function App() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/find" component={FindDog} />
+        <Route path="/find">{() => <FindDog key="new" />}</Route>
+        <Route path="/find/:id">
+          {(p) => (/^[1-9]\d{0,15}$/.test(p.id) ? <FindDog key={p.id} id={Number(p.id)} /> : <NotFound />)}
+        </Route>
         <Route path="/listings" component={Listings} />
         <Route path="/sources" component={Sources} />
         <Route component={NotFound} />

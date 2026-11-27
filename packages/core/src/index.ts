@@ -7,6 +7,7 @@ export * from './match.ts'
 export * from './source.ts'
 export * from './sweep.ts'
 export * from './time.ts'
+export * from './towns.ts'
 export * from './traits.ts'
 
 /** The API's whole-number version (ADR-0005 point 5). A breaking change to any route raises it. */

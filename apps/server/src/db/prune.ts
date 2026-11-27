@@ -57,7 +57,14 @@ export function pruneRepository(db: DatabaseSync, photosDir: string, retention: 
       const dayBefore = Date.parse(daysBefore(now, 1))
       for (const entry of existsSync(photosDir) ? readdirSync(photosDir, { withFileTypes: true }) : []) {
         if (!entry.isFile() || named.has(entry.name) || !PhotoName.safeParse(entry.name).success) continue
-        if (statSync(join(photosDir, entry.name)).mtimeMs < dayBefore) remove(entry.name)
+        // A file that vanishes or is locked between the listing and the stat waits for the next prune.
+        let old = false
+        try {
+          old = statSync(join(photosDir, entry.name)).mtimeMs < dayBefore
+        } catch {
+          photoErrors++
+        }
+        if (old) remove(entry.name)
       }
       return { listings, dogs, photos: removed, photoErrors }
     },

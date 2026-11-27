@@ -51,7 +51,8 @@ function setup(options: { siteDir?: string; deps?: Partial<RouteDeps> } = {}) {
 }
 
 const json = { 'content-type': 'application/json', 'x-jill-and-seek': '1' }
-const dog = { label: 'Zorbulon', lastSeenAt: T0, lastSeenTown: 'Quuxville' }
+// The town is a real name from the public towns table; the dog is made up.
+const dog = { label: 'Zorbulon', lastSeenAt: T0, lastSeenTown: 'Ada' }
 
 describe('GET /api/health', () => {
   it('answers with the app and schema versions, the data home and the counts', async () => {
