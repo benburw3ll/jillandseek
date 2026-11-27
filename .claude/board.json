@@ -1,0 +1,34 @@
+{
+  "owner": "benburw3ll",
+  "repo": "benburw3ll/jillandseek",
+  "project": 5,
+  "projectUrl": "https://github.com/users/benburw3ll/projects/5",
+  "visibility": "public",
+  "roadmap": "docs/ROADMAP.md",
+  "buildOrderFile": "AGENTS.md",
+  "checkBoxes": [],
+  "pathPrefixes": [],
+  "areas": {
+    "Design": [],
+    "Security": [
+      "security"
+    ],
+    "CI and tooling": [
+      "area: ci"
+    ],
+    "Docs and decisions": [
+      "area: docs"
+    ]
+  },
+  "labels": [
+    "adr",
+    "area: ci",
+    "area: docs",
+    "bug",
+    "later",
+    "parked",
+    "security"
+  ],
+  "loreMap": null,
+  "codex": false
+}
