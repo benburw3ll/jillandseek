@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@jillandseek/core": "workspace:*",
-    "@jillandseek/sources": "workspace:*"
+    "@jillandseek/sources": "workspace:*",
+    "zod": "4.6.7"
   }
 }
