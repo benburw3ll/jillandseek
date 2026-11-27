@@ -1,0 +1,32 @@
+# Runtime data, secrets and logs at the repo root: never commit (see AGENTS.md). data/ also holds
+# a session's briefs and findings.
+/data/
+/secrets/
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.log
+profile.local.json
+
+# Personal images and documents; force-add a reviewed one with made-up data (`git add -f`)
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.pdf
+!**/__screenshots__/*.png
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Dev data homes, test results, local worktrees and local agent settings
+.dev-home/
+test-results/
+playwright-report/
+.claude/worktrees/
+.claude/settings.local.json

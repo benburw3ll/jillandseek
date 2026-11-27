@@ -1,0 +1,36 @@
+# Runs on every PR and on main. The `check` job is the merge gate the main-branch ruleset requires.
+# This repo is public, so jobs run only on GitHub's own runners: anyone can open a pull request, and
+# a pull request must never run on the owner's computer. Never set the CI_RUNNER variable here.
+# Actions are pinned to full commit SHAs (Dependabot keeps them current).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan every commit for secrets
+        run: >-
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1
+          git /repo --redact --no-banner --verbose
