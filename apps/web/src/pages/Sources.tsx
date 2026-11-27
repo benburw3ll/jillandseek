@@ -102,7 +102,8 @@ export function Sources() {
   )
 }
 
-function Coverage({ sources }: { sources: Source[] }) {
+function Coverage({ sources: all }: { sources: Source[] }) {
+  const sources = all.filter((s) => s.status !== 'retired')
   const automatic = sources.filter((s) => s.access === 'automatic').length
   const blocked = sources.filter((s) => s.status === 'blocked').length
   return (

@@ -27,7 +27,8 @@ export function parseRobots(text: string): Robots {
         current = { agents: [], rules: [] }
         groups.push(current)
       }
-      current.agents.push(value.toLowerCase())
+      // "JillAndSeek/1.0" names us too: the product token is the part before any version.
+      current.agents.push((value.split('/')[0] ?? '').trim().toLowerCase())
       lastWasAgent = true
       continue
     }
@@ -59,7 +60,9 @@ export function normalisePath(path: string): string {
 /** How long a pattern's match is on `path`, or -1 when it doesn't match. */
 function matchLength(pattern: string, path: string, ignoreCase: boolean): number {
   const anchored = pattern.endsWith('$')
-  const body = normalisePath(anchored ? pattern.slice(0, -1) : pattern)
+  // Encode the pattern the way a URL path is encoded, so a rule with spaces or non-ASCII matches.
+  const raw = (anchored ? pattern.slice(0, -1) : pattern).replace(/[^!-~]/gu, (c) => encodeURIComponent(c))
+  const body = normalisePath(raw)
   const escaped = body
     .split('*')
     .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))

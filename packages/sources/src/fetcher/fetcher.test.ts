@@ -101,6 +101,34 @@ describe('the fetcher', () => {
     await expect(f.fetcher.forSource(SOURCE).get(SOURCE)).rejects.toBeInstanceOf(SourceBlocked)
   })
 
+  it('follows a versioned group naming Jill and Seek, and rules with spaces or non-ASCII', async () => {
+    const f = await fake({
+      '/robots.txt': robots('User-agent: JillAndSeek/1.0\nDisallow: /café\nDisallow: /a b\n\nUser-agent: *\nAllow: /'),
+      '*': text('ok'),
+    })
+    for (const path of ['/caf%C3%A9', '/a%20b']) {
+      await expect(f.fetcher.forSource(SOURCE).get(`https://pound.example.com${path}`)).rejects.toMatchObject({
+        reason: 'robots',
+      })
+    }
+    expect((await f.fetcher.forSource(SOURCE).get('https://pound.example.com/other')).body).toBe('ok')
+  })
+
+  it('stops reading a body past the size cap, and refuses an empty answer', async () => {
+    const f = await fake({
+      '/robots.txt': robots(''),
+      '/big': (_req, res) => {
+        res.writeHead(200, { 'content-type': 'text/html' })
+        for (let i = 0; i < 200; i++) res.write('x'.repeat(65_536))
+        res.end()
+      },
+      '/empty': text('', 202),
+    })
+    const fetcher = f.fetcher.forSource(SOURCE)
+    await expect(fetcher.get('https://pound.example.com/big')).rejects.toMatchObject({ code: 'too-large' })
+    await expect(fetcher.get('https://pound.example.com/empty')).rejects.toMatchObject({ code: 'empty-page' })
+  })
+
   it('reads robots.txt once a day, and treats a missing one as no rules', async () => {
     const f = await fake({ '/strays': text('ok') })
     const fetcher = f.fetcher.forSource(SOURCE)
@@ -116,6 +144,8 @@ describe('the fetcher', () => {
     ['a 403', text('no', 403), 'http-403'],
     ['a challenge page that answers 200', text('<title>Just a moment...</title>'), 'challenge'],
     ['a challenge header', text('ok', 200, { 'cf-mitigated': 'challenge' }), 'challenge'],
+    ['a WAF challenge on a 202', text('', 202, { 'x-amzn-waf-action': 'challenge' }), 'challenge'],
+    ['a Turnstile page', text('<div class="cf-turnstile"></div>'), 'challenge'],
   ])('stops at %s, marks the source blocked and makes no further request', async (_name, handler, reason) => {
     const f = await fake({ '/robots.txt': robots(''), '/strays': handler, '/other': text('ok') })
     const fetcher = f.fetcher.forSource(SOURCE)

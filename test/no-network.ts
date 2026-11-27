@@ -2,6 +2,7 @@
 // (ADR-0002, AGENTS.md hard rule 6). A connection to anything but this computer's loopback address
 // is refused, and the test that tried it fails even if its code swallowed the error. A test
 // against a local fake server (127.0.0.1) is still allowed.
+import dgram from 'node:dgram'
 import dns from 'node:dns'
 import net from 'node:net'
 import { afterEach, expect } from 'vitest'
@@ -13,7 +14,8 @@ const attempts: Attempts = store[KEY] ?? { list: [] }
 store[KEY] = attempts
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost'])
-const isLoopback = (host: unknown) => typeof host === 'string' && (LOOPBACK.has(host) || host.startsWith('127.'))
+const isLoopback = (host: unknown) =>
+  typeof host === 'string' && (LOOPBACK.has(host) || (net.isIP(host) === 4 && host.startsWith('127.')))
 
 /** The outside connections tried since the last call, cleared. For the test of this file only. */
 export function takeNetworkAttempts(): string[] {
@@ -65,6 +67,23 @@ if (!marks[patched]) {
     if (!isLoopback(hostname)) throw refuse(hostname)
     return (lookupPromise as (...a: unknown[]) => unknown)(hostname, ...rest)
   }) as typeof dns.promises.lookup
+
+  // DNS queries outside lookup, and UDP, are refused outright: no test needs them.
+  const refuseAll = (name: string) => () => {
+    throw refuse(name)
+  }
+  for (const name of Object.keys(dns) as (keyof typeof dns)[]) {
+    if (/^resolve|^reverse/.test(name) && typeof dns[name] === 'function') {
+      ;(dns as unknown as Record<string, unknown>)[name] = refuseAll('dns.' + name)
+    }
+  }
+  for (const name of Object.keys(dns.promises) as (keyof typeof dns.promises)[]) {
+    if (/^resolve|^reverse/.test(name) && typeof dns.promises[name] === 'function') {
+      ;(dns.promises as unknown as Record<string, unknown>)[name] = refuseAll('dns.promises.' + name)
+    }
+  }
+  dgram.Socket.prototype.send = refuseAll('dgram.send') as typeof dgram.Socket.prototype.send
+  dgram.Socket.prototype.connect = refuseAll('dgram.connect') as typeof dgram.Socket.prototype.connect
 }
 
 afterEach(() => {

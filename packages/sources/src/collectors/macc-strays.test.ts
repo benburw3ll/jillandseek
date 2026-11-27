@@ -47,6 +47,7 @@ describe('the macc-strays collector', () => {
     expect(isFullMaccRead([page(maccFixture)])).toBe(true)
     expect(isFullMaccRead([page(maccFixture.replace('1 - 3 of 3', '1 - 3 of 9'))])).toBe(false)
     expect(isFullMaccRead([page('<html>changed</html>')])).toBe(false)
+    expect(isFullMaccRead([page(maccFixture.replace('id="Result_Z900002"', 'id="changed"'))])).toBe(false)
     expect(parseMaccStrays(page('<html>changed</html>'))).toEqual([])
   })
 

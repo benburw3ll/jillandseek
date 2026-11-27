@@ -76,8 +76,8 @@ export async function runSweep(deps: SweepDeps): Promise<number> {
         )
       } catch (error) {
         const code = errorCode(error)
-        if (error instanceof SourceBlocked) deps.repo.blockSource(sourceId, error.reason, deps.now().toISOString())
         errors.push({ sourceId, code })
+        if (error instanceof SourceBlocked) deps.repo.blockSource(sourceId, error.reason, deps.now().toISOString())
         deps.log(`sweep: source=${sourceId} failed code=${code} ms=${Date.now() - t0}`)
       }
     }
@@ -98,8 +98,12 @@ function errorCode(error: unknown): string {
 
 export type SweepSchedule = { stop(): void; running(): boolean }
 
-/** Runs a sweep now and every `everyMs` (30 minutes), never two at once. */
-export function scheduleSweeps(deps: SweepDeps, everyMs = 30 * MINUTE_MS): SweepSchedule {
+/**
+ * Runs a sweep now and every `everyMs`, never two at once. The tick (5 minutes) is shorter than
+ * the 30-minute floor on purpose: `dueCollectors` is the only gate, so a read that started a few
+ * milliseconds late is not pushed back a whole extra tick.
+ */
+export function scheduleSweeps(deps: SweepDeps, everyMs = 5 * MINUTE_MS): SweepSchedule {
   let busy = false
   const tick = async () => {
     if (busy) return

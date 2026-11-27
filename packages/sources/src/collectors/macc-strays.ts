@@ -112,8 +112,10 @@ export function isFullMaccRead(pages: FetchedPage[]): boolean {
     pages.every((page) => {
       const m = /Animals:\s*(\d+)\s*-\s*(\d+)\s*of\s*(\d+)/.exec(page.body)
       if (!m) return false
-      const cards = parseHtml(page.body).querySelectorAll('.gridResult').length
-      return m[1] === '1' && m[2] === m[3] && Number(m[3]) === cards
+      const cards = parseHtml(page.body).querySelectorAll('.gridResult')
+      // Every card must carry an id the parser can read, or a changed card would look like a gone dog.
+      const readable = cards.every((c) => /^Result_[A-Za-z0-9]+$/.test(c.id))
+      return m[1] === '1' && m[2] === m[3] && Number(m[3]) === cards.length && readable
     })
   )
 }

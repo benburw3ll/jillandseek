@@ -66,10 +66,17 @@ const CHALLENGE_MARKERS = [
   /g-recaptcha|h-captcha|hcaptcha\.com|recaptcha\/api/i,
   /ddos protection by|checking your browser before accessing/i,
   /<title>[^<]*(captcha|access denied|are you a robot|bot check)[^<]*<\/title>/i,
+  /challenges\.cloudflare\.com|cf-turnstile/i,
+  /captcha-delivery\.com/i,
+  /sucuri_cloudproxy|sucuri website firewall/i,
+  /\/akam\/\d+\//i,
 ]
 
+/** Headers a bot-check answer carries. */
+const CHALLENGE_HEADERS = ['cf-mitigated', 'x-datadome', 'x-amzn-waf-action']
+
 export function isChallenge(headers: Headers, body: string): boolean {
-  if (headers.get('cf-mitigated') !== null) return true
+  if (CHALLENGE_HEADERS.some((h) => headers.get(h) !== null)) return true
   return CHALLENGE_MARKERS.some((re) => re.test(body))
 }
 
@@ -137,10 +144,33 @@ export function createFetcher(options: FetcherOptions): SharedFetcher {
       await res.body?.cancel()
       throw new FetchFailed('too-large')
     }
-    const body = await res.text()
-    if (body.length > maxBytes) throw new FetchFailed('too-large')
+    const body = await readCapped(res)
     if (isChallenge(res.headers, body)) throw new SourceBlocked('challenge')
     return body
+  }
+
+  /** Reads a body, stopping as soon as it passes the size cap. */
+  async function readCapped(res: Response): Promise<string> {
+    if (res.body === null) return ''
+    const reader = res.body.getReader()
+    const chunks: Uint8Array[] = []
+    let total = 0
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        total += value.byteLength
+        if (total > maxBytes) {
+          await reader.cancel()
+          throw new FetchFailed('too-large')
+        }
+        chunks.push(value)
+      }
+    } catch (error) {
+      if (error instanceof FetchFailed) throw error
+      throw new FetchFailed(error instanceof Error && error.name === 'TimeoutError' ? 'timeout' : 'network')
+    }
+    return new TextDecoder().decode(Buffer.concat(chunks))
   }
 
   /** GETs `start`, following only same-host https redirects. */
@@ -214,6 +244,8 @@ export function createFetcher(options: FetcherOptions): SharedFetcher {
             const { url: final, res } = await getFollowing(url, host, checkRobots)
             const body = await refuseNo(res)
             if (res.status < 200 || res.status >= 300) throw new FetchFailed(`http-${res.status}`)
+            // An empty answer (a 202 or 204, say) is never a full read of anything.
+            if (body.trim() === '') throw new FetchFailed('empty-page')
             return { url: final.href, status: res.status, contentType: res.headers.get('content-type') ?? '', body }
           } catch (error) {
             if (error instanceof SourceBlocked) blocked = error

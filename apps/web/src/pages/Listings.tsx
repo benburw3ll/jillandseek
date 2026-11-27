@@ -1,5 +1,5 @@
 import { type Listing, ListingKind, type ListingQueryInput } from '@jillandseek/core'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useLocation, useSearch } from 'wouter'
 import { fetchListings } from '../api/listings.ts'
 import { fetchSources } from '../api/sources.ts'
@@ -62,6 +62,8 @@ export function Listings() {
   const [draft, setDraft] = useState(filters)
   const [load, setLoad] = useState<State>({ state: 'loading' })
   const [names, setNames] = useState<Record<string, string>>({})
+  // A 'show more' still loading when the filters change is dropped, so its page never lands on them.
+  const more = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -73,7 +75,10 @@ export function Listings() {
         if (!controller.signal.aborted) setLoad({ state: 'error' })
       },
     )
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+      more.current?.abort()
+    }
   }, [search])
 
   useEffect(() => {
@@ -93,11 +98,17 @@ export function Listings() {
 
   const loadMore = () => {
     if (load.state !== 'ready' || load.nextCursor === null) return
+    const controller = new AbortController()
+    more.current = controller
     setLoad({ ...load, more: 'loading' })
-    fetchListings(toQuery(filters, load.nextCursor)).then(
-      (page) =>
-        setLoad({ state: 'ready', items: [...load.items, ...page.items], nextCursor: page.nextCursor, more: 'idle' }),
-      () => setLoad({ ...load, more: 'error' }),
+    fetchListings(toQuery(filters, load.nextCursor), controller.signal).then(
+      (page) => {
+        if (controller.signal.aborted) return
+        setLoad({ state: 'ready', items: [...load.items, ...page.items], nextCursor: page.nextCursor, more: 'idle' })
+      },
+      () => {
+        if (!controller.signal.aborted) setLoad({ ...load, more: 'error' })
+      },
     )
   }
 
