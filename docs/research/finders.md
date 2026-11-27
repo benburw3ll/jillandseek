@@ -10,11 +10,11 @@ How it was checked: one plain fetch of each site's public about or help page and
 | --- | --- | --- | --- | --- | --- |
 | [Petco Love Lost](https://petcolovelost.org) | A free national lost-and-found database that matches an uploaded photo against its listings | The United States | Partner shelters' software, plus photos from owners and finders | No Minnesota view. It sees only shelters that joined, and nothing from Facebook, Nextdoor or other finders | Search summaries. Its own pages answered 403 |
 | [PawBoost](https://www.pawboost.com) | Sends a lost-pet post out as alerts: its local Facebook pages, email and its app. Posting is free, and wider reach is paid | The United States, by area | People post their own reports | It broadcasts. It is not a list of found dogs or strays to search | Search summaries. Its about page answered 403 |
-| [Lost Dogs Minnesota](https://lostdogsmn.com) | A volunteer group that takes lost-dog and found-dog reports and pairs them up by hand. Free | Minnesota | Its own report forms and its Facebook page | No feed or search across other sources. It depends on volunteers' time | Search summaries. Its pages were not read |
+| [Lost Dogs Minnesota](https://lostdogsmn.com) | A volunteer group that takes lost-dog and found-dog reports and pairs them up by hand. Free | Minnesota | Its own report forms and its Facebook page | No feed or search across other sources. It depends on volunteers' time | Search summaries. Only its robots file was read |
 | [Pet FBI](https://petfbi.org) | A nonprofit database of lost and found pet reports, with matching by place, date and kind of animal | The United States and Canada | People file reports | National, with no Minnesota focus. It names no shelter feeds | Read on the site |
 | [24PetConnect](https://24petconnect.com) | The public search of a shelter software platform: strays and adoptable animals, by agency | The agencies that use the platform | Each agency's own records | One agency at a time. The earlier research in issue #3 read the Minneapolis stray list here. Which other Minnesota agencies publish through it is not yet known (#15) | Issue #3's research, and search summaries |
 | [Animal Humane Society](https://www.animalhumanesociety.org) | Lists the strays it holds, and runs lost and found bulletin boards | Its Twin Cities shelters, and the cities that contract with it | Animals brought in, plus people's posts on its boards | Only what it holds or what is posted there. Not statewide | Search summaries. Its lost-and-found page answered 403 |
-| Facebook lost-pet groups | Neighbours and owners post photos and sightings | Local and regional groups | Members' posts | No fixed shape, behind a login, and closed to outside search | Its robots file, read on the site |
+| Facebook lost-pet groups | Neighbours and owners post photos and sightings | Local and regional groups | Members' posts | No fixed shape, behind a login, and closed to outside search | Its robots file, read on the site, and search summaries |
 | Nextdoor | Neighbourhood posts and alerts | Members of each neighbourhood | Members' posts | Behind a login, and private to each neighbourhood | Its robots file, read on the site |
 | Craigslist (lost and found, pets) | Classified posts | One site per city | Anonymous posts | No fixed shape, no checks on who posts, and nothing ties a post to a shelter | Its robots file, read on the site |
 | Microchip registry lookups | Tell which registry holds a chip's record | The registries that take part | The registries | Useful only once someone has scanned the dog's chip | Search summaries |
@@ -26,7 +26,7 @@ One fetch of `/robots.txt` on 2026-11-26. "Generic agent" means the rules for `U
 | Host | For the generic agent | Note |
 | --- | --- | --- |
 | `24petconnect.com` | No robots file (404) | Terms are checked on the day a collector is built (#14) |
-| `petcolove.org` | Not readable: 403 | The earlier research met a bot check too |
+| `petcolovelost.org`, which redirects to `petcolove.org` | Not readable: 403 | The earlier research met a bot check too |
 | `www.pawboost.com` | Everything allowed | Its pages still answered 403 to a plain fetch |
 | `www.animalhumanesociety.org` | Allowed | Blocks a list of named crawlers. Its lost-and-found page answered 403 |
 | `www.reddit.com` | Not read for this table | Issue #3's research: its robots rules disallow automated reading |

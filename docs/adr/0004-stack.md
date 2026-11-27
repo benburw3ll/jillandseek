@@ -34,7 +34,7 @@ Accepted 2026-11-26 by the owner's go-ahead on the recommended option (issue #5,
    - The SQL stays plain, with no ORM and no query builder, so a later move to Postgres is a migration and not a rewrite.
 4. **Validation.** zod at every edge: API input, collector output, registry entries and settings read from the environment. A record's TypeScript type is inferred from its schema, so the two can't drift.
 5. **Tools.** Vitest for tests, with Testing Library and jsdom for the site's component tests. Biome for lint and format, with one config at the root. lefthook for the git hooks: a staged-file guard, Conventional Commits, and no push to `main`.
-   - The runtime dependencies are the ones this record names: `hono`, `@hono/node-server`, `zod`, `react`, `react-dom` and `wouter`. Another one is a decision: a short ADR that narrows this one comes first.
+   - The runtime dependencies are the ones this record names: `hono`, `@hono/node-server`, `zod`, `react`, `react-dom`, `wouter`, and `node-html-parser` for the collectors in `packages/sources`, which read HTML pages. Another one is a decision: a short ADR that narrows this one comes first.
    - A small, widely used dev-only tool (a test library, a types package) is the builder's call, and the PR names it.
 6. **The gate.** `pnpm check` runs, in order, a personal-values scan, typecheck, lint, tests and build, and stops at the first failure.
    - CI's `check` job runs gitleaks, then `pnpm install --frozen-lockfile` and `pnpm check`, on GitHub's runners, with actions pinned by SHA. The job keeps the name `check`, because the ruleset on `main` requires that check-run.
@@ -58,6 +58,7 @@ Pinned from the npm registry on 2026-11-26. `package.json` and the lockfile are 
 | Vite | 8.4.0 |
 | `@vitejs/plugin-react` | 6.3.0 |
 | wouter | 3.13.0 |
+| `node-html-parser` | 9.0.7 |
 | Vitest | 5.1.2 |
 | `@testing-library/react` | 16.3.3 |
 | jsdom | 31.0.1 |

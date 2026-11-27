@@ -34,9 +34,11 @@ Accepted 2026-11-26 by the owner's go-ahead on the recommended option (issue #6,
      - `access`: `automatic` | `capture` | `link`.
      - `collector`: the collector's id when `access` is `automatic`, otherwise null.
      - `checked_on`, `check_note`: the robots and terms check ([0002](0002-sources.md)).
+     - `notes`: free text from the registry, or null.
      - `status`: `active` | `blocked` | `retired`.
      - `blocked_at`, `blocked_reason` (a code: `http-403`, `http-429`, `challenge` or `robots`), `last_read_at`.
      - The registry owns every field except `status` going to `blocked`, `blocked_at`, `blocked_reason` and `last_read_at`. Those belong to the sweep, and a registry sync never clears them. Only the owner clears a block.
+     - When the fetcher finds an automatic source's pages disallowed by robots, the sweep marks it `blocked` (`robots`). Moving it to `link`, as [0002](0002-sources.md) point 2 says, is then a change to its registry entry.
    - **sweep**
      - `id`, `started_at`, `finished_at`.
      - `counts`: `{ sourcesDue, sourcesRead, listingsSeen, listingsNew, listingsUpdated, listingsGone }`.
@@ -48,14 +50,18 @@ Accepted 2026-11-26 by the owner's go-ahead on the recommended option (issue #6,
      - `posted_at`: when the source says it was posted or taken in, or null.
      - `first_seen_at`, `last_seen_at`: when a sweep first and last read it.
      - `gone_at`: when a full read first missed it, or null.
-     - `place_text`, `lat`, `lon`, `place_precision` (`point` | `town` | `county` | `unknown`).
+     - `place_text`: the place as the post gave it.
+     - `town`, `county`: the Minnesota town and county when they are known, otherwise null. The Listings page filters on them.
+     - `lat`, `lon`, `place_precision` (`point` | `town` | `county` | `unknown`).
      - `traits`: the shape below.
      - `text`: the post's own words.
      - `photo_urls`: the photos' source URLs.
      - `contact`: the contact lines the public post showed, as posted, or null. Local screens only ([0003](0003-privacy.md)).
    - **dog**
      - `id`, `label`.
-     - `last_seen_at`, `last_seen_place`, `lat`, `lon`, `place_precision`.
+     - `last_seen_at`: when the dog was last seen.
+     - `last_seen_town` (a Minnesota town from the local towns table) and `last_seen_place` (an optional street or landmark).
+     - `lat`, `lon`, `place_precision`.
      - `traits`, `marks` (distinguishing marks), `notes`.
      - `photos`: file names inside the data home's `photos/`.
      - `status`: `missing` | `found`. `found_at`, `created_at`, `updated_at`.

@@ -29,7 +29,8 @@ Accepted 2026-11-26 by the owner's go-ahead on the recommended option (issue #4,
    - A dog the owner marks found is deleted, with its matches and photos, 30 days later (`JILL_KEEP_FOUND_DAYS`).
    - Both lines are settings with these defaults. Deleting a listing deletes its matches and any cached photo with it.
    - Pruning runs when the server starts and once a day.
-4. **Photos.** A listing's photo is kept as its source URL. A derived fingerprint is added when photo matching is decided. A local copy, if one is ever cached, lives only as long as its listing.
+4. **Photos.** A listing's photo is kept as its source URL plus a derived fingerprint, never as a picture of its own. A local copy, if one is ever cached, lives only as long as its listing.
+   - v1 derives no fingerprint yet. It arrives with the photo-matching decision, by its own migration, so [0005](0005-records.md) has no field for it.
    - In v1 the site shows a listing's photo straight from its source URL, with no referrer sent.
    - A missing dog's photos, which the owner adds, live in the data home's `photos/` and are deleted with the dog.
 5. **Logs** hold ids, counts and timings. They never hold post text, names, contact details, places, request bodies or query values. An error is logged as a code and an id.

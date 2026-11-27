@@ -28,7 +28,7 @@ Accepted 2026-11-26 by the owner's go-ahead on the recommended option (issue #2,
    - **Freshness:** the time from a listing appearing at its source to it being in Jill and Seek. The target is 30 minutes for automatic sources.
    - **Matching:** recall at 20 on the synthetic test set (#18): how often a missing dog's true listings are in its top 20.
    - **One search instead of ten sites:** the count of sources one search covers. A dog is entered once and ranked against every listing from every source.
-3. **Honesty.** A match is a ranking, never an identification. Every result says to go and see the dog in person. No screen, reason or message says a dog was found or identified.
+3. **Honesty.** A match is a ranking, never an identification. Every result says to go and see the dog in person. No screen, reason or message says a listing is the dog: never "found your dog" or "identified".
 4. **Free to use.** No fees, ads or paid tiers. Running it as a nonprofit is a later idea, not a v1 goal.
 5. **Scope.** Minnesota first: sources that cover Minnesota, and national ones for their Minnesota listings. Other states come only through a later ADR.
 
