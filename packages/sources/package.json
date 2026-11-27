@@ -1,0 +1,14 @@
+{
+  "name": "@jillandseek/sources",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The source registry, the collectors and their one fetcher.",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@jillandseek/core": "workspace:*"
+  }
+}

@@ -6,7 +6,9 @@
   "visibility": "public",
   "roadmap": "docs/ROADMAP.md",
   "buildOrderFile": "AGENTS.md",
-  "checkBoxes": [],
+  "checkBoxes": [
+    "`pnpm check` passes"
+  ],
   "pathPrefixes": [],
   "areas": {
     "Design": [],

@@ -1,0 +1,14 @@
+{
+  "name": "@jillandseek/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The records, their zod schemas and matching. Pure: no I/O and no clock reads.",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}
