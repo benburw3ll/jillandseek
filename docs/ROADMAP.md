@@ -11,7 +11,7 @@ The table's order is the build order. Each outcome is a GitHub milestone, and it
 | Outcome | What it gives the owner | Status |
 | --- | --- | --- |
 | O1 Decide the shape | Every decision the build rests on is an accepted ADR: purpose, sources, privacy, stack, records, AI | Done |
-| O2 The bare bones | The workspace, its gate, the database, the server and the site's first pages run on the owner's computer | Planned |
+| O2 The bare bones | The workspace, its gate, the database, the server and the site's first pages run on the owner's computer | Done |
 | O3 The first sources | A registry of every known source, a sweep on a schedule, and the first Minnesota collectors filling the database | Planned |
 | O4 Search for a missing dog | Enter a missing dog and see every collected listing ranked against it, with reasons | Planned |
 | O5 Watches that keep looking (v1.1) | A dog's search re-runs on every sweep and alerts the owner on a new match | Planned |

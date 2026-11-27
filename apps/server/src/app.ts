@@ -31,7 +31,7 @@ export function createApp(options: AppOptions) {
     c.header('x-frame-options', 'DENY')
     c.header(
       'content-security-policy',
-      "default-src 'self'; img-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; img-src 'self' https: data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
     )
   })
   app.use(hostAndOrigin(ownHosts(options.ports)))
