@@ -18,12 +18,24 @@
     ],
     "Docs and decisions": [
       "area: docs"
+    ],
+    "Core": [
+      "area: core"
+    ],
+    "Sources": [
+      "area: sources"
+    ],
+    "Web": [
+      "area: web"
     ]
   },
   "labels": [
     "adr",
     "area: ci",
+    "area: core",
     "area: docs",
+    "area: sources",
+    "area: web",
     "bug",
     "later",
     "parked",
