@@ -1,4 +1,5 @@
-# Weekly updates for the actions CI uses. Package updates are added once the plan picks the tools.
+# Weekly updates for the actions CI uses and the workspace's npm packages, each in one grouped PR,
+# and only for releases at least 7 days old.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -12,4 +13,16 @@ updates:
         patterns: ['*']
     commit-message:
       prefix: ci
+      include: scope
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm:
+        patterns: ['*']
+    commit-message:
+      prefix: build
       include: scope

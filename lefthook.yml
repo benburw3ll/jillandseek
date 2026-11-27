@@ -1,0 +1,17 @@
+# Git hooks, installed by `pnpm install` (the root "prepare" script runs `lefthook install`).
+# They are shared by every worktree of this repo. Never skip them with --no-verify.
+pre-commit:
+  commands:
+    guard-staged:
+      run: node scripts/guard-staged.mjs
+
+commit-msg:
+  commands:
+    conventional-commits:
+      run: node scripts/check-commit-msg.mjs {1}
+
+pre-push:
+  commands:
+    no-push-to-main:
+      run: node scripts/guard-push.mjs
+      use_stdin: true

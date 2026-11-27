@@ -1,0 +1,14 @@
+{
+  "name": "@jillandseek/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The website, built by Vite.",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@jillandseek/core": "workspace:*"
+  }
+}

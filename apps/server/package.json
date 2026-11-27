@@ -1,0 +1,15 @@
+{
+  "name": "@jillandseek/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The local API, the sweep and the database.",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@jillandseek/core": "workspace:*",
+    "@jillandseek/sources": "workspace:*"
+  }
+}
