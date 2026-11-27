@@ -1,0 +1,141 @@
+# Keeps the milestone cards in step as issues and milestones change, so a card's list is right within
+# a minute when the owner moves an issue to another milestone. A milestone card is an issue labelled
+# `milestone card` whose body starts `<!-- milestone-card: <milestone number> -->` (or `findings`, the
+# card for the open bugs with no milestone); the milestone's issues are its sub-issues.
+#
+# For one issue: it goes under its milestone's card (replace_parent moves it off another card), or
+# under the findings card when it is an open bug with no milestone, or comes off its card when it has
+# neither; open sub-issues sit before closed ones, each by number. An issue under a parent that is not
+# a card is left there. Events on cards are ignored. For one milestone: created makes its card, edited
+# brings the card's title and body along, closed and opened close and reopen the card.
+#
+# The scribe's `milestone-cards.mjs --apply` does the same for every milestone, and the Project part
+# this can't: the GITHUB_TOKEN can't reach a user's Project, so a card made here reaches the board at
+# its next run (the scribe runs it after filing), and the Lane, Version and Build order are its. The
+# card body here and in milestone-cards.mjs must stay identical, or each rewrites the other's.
+# A failed write is a warning, not a failed run (a failed run emails the owner); the next
+# milestone-cards.mjs run puts it right.
+name: Milestone cards
+
+on:
+  issues:
+    types: [opened, milestoned, demilestoned, labeled, unlabeled, closed, reopened]
+  milestone:
+    types: [created, edited, closed, opened]
+
+permissions:
+  issues: write
+  contents: read
+
+# One run at a time per issue or milestone. Each run reads the current state, so the latest queued run
+# is the one that counts.
+concurrency:
+  group: milestone-cards-${{ github.event.issue.number && format('issue-{0}', github.event.issue.number) || format('milestone-{0}', github.event.milestone.number) }}
+  cancel-in-progress: false
+
+jobs:
+  follow:
+    name: cards follow their milestones
+    # Skip cards, and every label change but `bug` (the only label that moves an issue).
+    if: >-
+      github.event_name == 'milestone' || (
+        !contains(github.event.issue.labels.*.name, 'milestone card') &&
+        ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'bug')
+      )
+    # This repo is public: GitHub's own runners only, as in ci.yml.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const LABEL = 'milestone card'
+            const MARKER = /<!--\s*milestone-card:\s*(\d+|findings)\s*-->/
+            const STANDING = "This card stands for the milestone on the Project's Milestones board; its sub-issues are the milestone's issues and the scribe keeps them in step. Nothing to build here."
+            const norm = (s) => (s ?? '').replace(/\r\n/g, '\n').trim()
+            // The same body milestone-cards.mjs writes.
+            const bodyFor = (m) =>
+              [`<!-- milestone-card: ${m.number} -->`, `Milestone: https://github.com/${owner}/${repo}/milestone/${m.number}`, norm(m.description), STANDING]
+                .filter(Boolean)
+                .join('\n\n')
+            const labelsOf = (i) => (i.labels ?? []).map((l) => (typeof l === 'string' ? l : l.name))
+            const isCard = (i) => labelsOf(i).includes(LABEL)
+
+            /** The cards by marker key; the lowest number wins when two share one. */
+            async function cards() {
+              const list = await github.paginate('GET /repos/{owner}/{repo}/issues', { owner, repo, labels: LABEL, state: 'all', per_page: 100 })
+              const byKey = new Map()
+              for (const c of list) {
+                if (c.pull_request) continue
+                const key = MARKER.exec(c.body ?? '')?.[1]
+                if (key && (!byKey.has(key) || c.number < byKey.get(key).number)) byKey.set(key, c)
+              }
+              return byKey
+            }
+
+            async function followMilestone(number) {
+              let m
+              try {
+                m = (await github.rest.issues.getMilestone({ owner, repo, milestone_number: number })).data
+              } catch (e) {
+                if (e.status === 404) return core.info(`milestone ${number} is gone`)
+                throw e
+              }
+              const card = (await cards()).get(String(number))
+              if (!card) {
+                if (m.state !== 'open') return core.info(`${m.title}: closed, with no card`)
+                const made = await github.rest.issues.create({ owner, repo, title: m.title, body: bodyFor(m), labels: [LABEL] })
+                return core.info(`card #${made.data.number} made for ${m.title}`)
+              }
+              const patch = {}
+              if (card.title !== m.title) patch.title = m.title
+              if (norm(card.body) !== bodyFor(m)) patch.body = bodyFor(m)
+              if (m.state === 'closed' && card.state === 'open') Object.assign(patch, { state: 'closed', state_reason: 'completed' })
+              if (m.state === 'open' && card.state === 'closed') patch.state = 'open'
+              if (!Object.keys(patch).length) return core.info(`card #${card.number} is in step`)
+              await github.rest.issues.update({ owner, repo, issue_number: card.number, ...patch })
+              core.info(`card #${card.number}: ${Object.keys(patch).join(', ')}`)
+            }
+
+            async function followIssue(number) {
+              const issue = (await github.rest.issues.get({ owner, repo, issue_number: number })).data
+              if (issue.pull_request || isCard(issue)) return core.info(`#${number} is a card or a PR`)
+              const byKey = await cards()
+              const pn = Number(/\/issues\/(\d+)$/.exec(issue.parent_issue_url ?? '')?.[1]) || null
+              const parent = pn ? (await github.rest.issues.get({ owner, repo, issue_number: pn })).data : null
+              let target = null
+              if (issue.milestone) target = byKey.get(String(issue.milestone.number)) ?? null
+              else if (issue.state === 'open' && labelsOf(issue).includes('bug')) target = byKey.get('findings') ?? null
+              if (parent && !isCard(parent)) return core.info(`#${number} is under #${parent.number}, which is not a card: left there`)
+              if (!target) {
+                if (!parent) return core.info(`#${number}: no card to go under`)
+                await github.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/sub_issue', { owner, repo, issue_number: parent.number, sub_issue_id: issue.id })
+                return core.info(`#${number} off card #${parent.number}`)
+              }
+              if (parent?.number !== target.number) {
+                await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/sub_issues', {
+                  owner, repo, issue_number: target.number, sub_issue_id: issue.id, replace_parent: true,
+                })
+                core.info(`#${number} → card #${target.number}${parent ? ` (from card #${parent.number})` : ''}`)
+              }
+              // Its place: open before closed, each by number. One move at most.
+              const kids = await github.paginate('GET /repos/{owner}/{repo}/issues/{issue_number}/sub_issues', { owner, repo, issue_number: target.number, per_page: 100 })
+              const rank = (i) => (i.state === 'open' ? 0 : 1e9) + i.number
+              const at = kids.findIndex((k) => k.id === issue.id)
+              if (at < 0) return
+              const next = kids.find((k) => k.id !== issue.id && rank(k) > rank(issue))
+              const where = next ? { before_id: next.id } : { after_id: kids.filter((k) => k.id !== issue.id).at(-1)?.id }
+              const inPlace = next ? kids[at + 1]?.id === next.id : at === kids.length - 1
+              if (inPlace || (!next && !where.after_id)) return
+              await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}/sub_issues/priority', { owner, repo, issue_number: target.number, sub_issue_id: issue.id, ...where })
+              core.info(`#${number} placed ${next ? `before #${next.number}` : 'last'} on card #${target.number}`)
+            }
+
+            try {
+              if (context.eventName === 'milestone') await followMilestone(context.payload.milestone.number)
+              else await followIssue(context.payload.issue.number)
+            } catch (e) {
+              if (e.status === undefined) throw e
+              core.warning(`GitHub said ${e.status}: ${e.message}. The next milestone-cards.mjs run puts it right.`)
+            }
