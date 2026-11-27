@@ -8,6 +8,7 @@ import { dogsRoutes } from './routes/dogs.ts'
 import { healthRoutes } from './routes/health.ts'
 import { listingsRoutes } from './routes/listings.ts'
 import { sourcesRoutes } from './routes/sources.ts'
+import { sweepsRoutes } from './routes/sweeps.ts'
 
 // The one app file: the guards, the request log, and every route file registered under /api.
 // Each resource has its own route file, so work on one never edits another's.
@@ -46,6 +47,7 @@ export function createApp(options: AppOptions) {
   api.route('/', healthRoutes(options))
   api.route('/', sourcesRoutes(options))
   api.route('/', listingsRoutes(options))
+  api.route('/', sweepsRoutes(options))
   api.route('/', dogsRoutes(options))
   app.route('/api', api)
   app.all('/api/*', (c) => jsonError(c, 404, 'not-found'))

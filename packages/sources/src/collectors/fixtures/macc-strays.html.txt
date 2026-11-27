@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!-- A made-up page in the markup shape of the 24PetConnect stray list. Every animal, id, place and
+     photo URL here is invented. It is not a copy of any live page. -->
+<html lang="en">
+<head>
+  <meta name="title" content="Example Portal: Shelter Results">
+  <title>Example Portal</title>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbarCSS">
+    <li class="nav-item navFound" onclick="AdoptableAnimals('MACCStrayPets')">
+      <a class="nav-link active" id="found-tab"><span>Stray Pets at MACC</span></a>
+    </li>
+  </nav>
+  <div class="container main-body">
+    <script>filterURLName = 'MACCStrayPets'</script>
+    <div class="gridResultContainer">
+      <h3 style="margin-top: 20px;" id="AnimalCountHeader">Animals: 1 - 3 of 3</h3>
+      <div class="gridResultsContinerInner">
+        <div class="gridResult" tabindex="0" id="Result_Z900001" onclick="Details('MACCStrayPets', 'ZZPL', 'Z900001')">
+          <img src="/image/100000001" alt="Image_Z900001" id="AnimalImage_Z900001" loading="lazy" />
+          <div class="line_Name">
+            <span class="column_Name  columnName_Name  results">Name</span><span class="ellipsis ellipsis_Name results">: </span>
+            <span class="text_Name results">*Zorbulon (Z900001)</span>
+            <br />
+          </div>
+          <div class="line_Gender">
+            <span class="column_Gender  columnName_Gender  results">Gender</span><span class="ellipsis ellipsis_Gender results">: </span>
+            <span class="text_Gender results">Female</span>
+            <br />
+          </div>
+          <div class="line_Breed">
+            <span class="column_Breed  columnName_Breed  results">Breed</span><span class="ellipsis ellipsis_Breed results">: </span>
+            <span class="text_Breed results">Quux Hound/Mix</span>
+            <br />
+          </div>
+          <div class="line_Animaltype">
+            <span class="column_Animaltype  columnName_Animaltype  results">Animal type</span><span class="ellipsis ellipsis_Animaltype results">: </span>
+            <span class="text_Animaltype results">Dog</span>
+            <br />
+          </div>
+          <div class="line_Age">
+            <span class="column_Age  columnName_Age  results">Age</span><span class="ellipsis ellipsis_Age results">: </span>
+            <span class="text_Age results">2 years</span>
+            <br />
+          </div>
+          <div class="line_Weight">
+            <span class="column_Weight  columnName_Weight  results">Weight</span><span class="ellipsis ellipsis_Weight results">: </span>
+            <span class="text_Weight results">53 pounds</span>
+            <br />
+          </div>
+          <div class="line_Broughttotheshelter">
+            <span class="column_Broughttotheshelter  columnName_Broughttotheshelter  results">Brought to the shelter</span><span class="ellipsis ellipsis_Broughttotheshelter results">: </span>
+            <span class="text_Broughttotheshelter results">2026.01.08</span>
+            <br />
+          </div>
+          <div class="line_Location">
+            <span class="column_Location  columnName_Location  results">Location</span><span class="ellipsis ellipsis_Location results">: </span>
+            <span class="text_Location results">You will find me in kennel ZZ01.</span>
+            <br />
+          </div>
+          <div class="line_LocationFound">
+            <span class="column_LocationFound  columnName_LocationFound  results">Location Found</span><span class="ellipsis ellipsis_LocationFound results">: </span>
+            <span class="text_LocationFound results">100 Block Quux St, Minneapolis Mn 55400</span>
+            <br />
+          </div>
+          <div class="line_ViewType">
+            <span class="column_ViewType  columnName_ViewType  results">ViewType</span><span class="ellipsis ellipsis_ViewType results">: </span>
+            <span class="text_ViewType results">lostmypet</span>
+            <br />
+          </div>
+        </div>
+        <div class="gridResult" tabindex="0" id="Result_Z900002" onclick="Details('MACCStrayPets', 'ZZPL', 'Z900002')">
+          <img src="/image/100000002" alt="Image_Z900002" id="AnimalImage_Z900002" loading="lazy" />
+          <div class="line_Name">
+            <span class="column_Name  columnName_Name  results">Name</span><span class="ellipsis ellipsis_Name results">: </span>
+            <span class="text_Name results">Blorp (Z900002)</span>
+            <br />
+          </div>
+          <div class="line_Gender">
+            <span class="column_Gender  columnName_Gender  results">Gender</span><span class="ellipsis ellipsis_Gender results">: </span>
+            <span class="text_Gender results">Neutered Male</span>
+            <br />
+          </div>
+          <div class="line_Breed">
+            <span class="column_Breed  columnName_Breed  results">Breed</span><span class="ellipsis ellipsis_Breed results">: </span>
+            <span class="text_Breed results">Zorbulon Terrier</span>
+            <br />
+          </div>
+          <div class="line_Animaltype">
+            <span class="column_Animaltype  columnName_Animaltype  results">Animal type</span><span class="ellipsis ellipsis_Animaltype results">: </span>
+            <span class="text_Animaltype results">Dog</span>
+            <br />
+          </div>
+          <div class="line_Age">
+            <span class="column_Age  columnName_Age  results">Age</span><span class="ellipsis ellipsis_Age results">: </span>
+            <span class="text_Age results">4 months</span>
+            <br />
+          </div>
+          <div class="line_Broughttotheshelter">
+            <span class="column_Broughttotheshelter  columnName_Broughttotheshelter  results">Brought to the shelter</span><span class="ellipsis ellipsis_Broughttotheshelter results">: </span>
+            <span class="text_Broughttotheshelter results">2026.01.09</span>
+            <br />
+          </div>
+          <div class="line_LocationFound">
+            <span class="column_LocationFound  columnName_LocationFound  results">Location Found</span><span class="ellipsis ellipsis_LocationFound results">: </span>
+            <span class="text_LocationFound results">Quux Park</span>
+            <br />
+          </div>
+        </div>
+        <div class="gridResult" tabindex="0" id="Result_Z900003" onclick="Details('MACCStrayPets', 'ZZPL', 'Z900003')">
+          <img src="/image/100000003" alt="Image_Z900003" id="AnimalImage_Z900003" loading="lazy" />
+          <div class="line_Gender">
+            <span class="column_Gender  columnName_Gender  results">Gender</span><span class="ellipsis ellipsis_Gender results">: </span>
+            <span class="text_Gender results">Unknown</span>
+            <br />
+          </div>
+          <div class="line_Animaltype">
+            <span class="column_Animaltype  columnName_Animaltype  results">Animal type</span><span class="ellipsis ellipsis_Animaltype results">: </span>
+            <span class="text_Animaltype results">Dog</span>
+            <br />
+          </div>
+          <div class="line_Age">
+            <span class="column_Age  columnName_Age  results">Age</span><span class="ellipsis ellipsis_Age results">: </span>
+            <span class="text_Age results">9 years</span>
+            <br />
+          </div>
+          <div class="line_Weight">
+            <span class="column_Weight  columnName_Weight  results">Weight</span><span class="ellipsis ellipsis_Weight results">: </span>
+            <span class="text_Weight results">12 pounds</span>
+            <br />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

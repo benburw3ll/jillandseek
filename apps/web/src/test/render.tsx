@@ -25,9 +25,9 @@ export function fakeApi(answers: Record<string, unknown>) {
 }
 
 export function renderAt(path: string) {
-  const { hook } = memoryLocation({ path })
+  const { hook, searchHook } = memoryLocation({ path })
   return render(
-    <Router hook={hook}>
+    <Router hook={hook} searchHook={searchHook}>
       <App />
     </Router>,
   )
