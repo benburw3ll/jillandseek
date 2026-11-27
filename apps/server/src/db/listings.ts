@@ -8,7 +8,7 @@ import {
   type ListingQueryInput,
   type Page,
 } from '@jillandseek/core'
-import { json, type Row } from './rows.ts'
+import { json, type Row, transaction } from './rows.ts'
 
 // The listings table. One row per (source_id, source_key): a repeat read moves last_seen_at and
 // changes what changed, and never makes a second row (ADR-0005 point 3).
@@ -81,8 +81,10 @@ function decodeCursor(cursor: string): [string, number] {
 
 export type UpsertResult = { id: number; change: 'new' | 'updated' | 'seen' }
 
+export type ReadResult = { seen: number; new: number; updated: number; gone: number }
+
 export function listingsRepository(db: DatabaseSync) {
-  return {
+  const self = {
     /**
      * Inserts a listing, or, for one already stored, moves its `last_seen_at` to `now`, clears
      * `gone_at` and writes any field that changed.
@@ -138,6 +140,35 @@ export function listingsRepository(db: DatabaseSync) {
       return Number(result.changes)
     },
 
+    /**
+     * Stores one read of a source in one transaction: every listing upserted and, after a full
+     * read, the ones it didn't see marked gone. If any write fails, none of them is kept.
+     */
+    recordRead(sourceId: string, candidates: ListingCandidateInput[], fullRead: boolean, now: string): ReadResult {
+      return transaction(db, () => {
+        const result: ReadResult = { seen: 0, new: 0, updated: 0, gone: 0 }
+        const keys: string[] = []
+        for (const c of candidates) {
+          if (c.sourceId !== sourceId) throw new Error('a listing of another source')
+          const r = self.upsertListing(c, now)
+          keys.push(c.sourceKey)
+          result.seen++
+          if (r.change === 'new') result.new++
+          if (r.change === 'updated') result.updated++
+        }
+        if (fullRead) result.gone = self.markGone(sourceId, keys, now)
+        return result
+      })
+    },
+
+    /** How many listings each source has that aren't gone. */
+    listingCounts(): Record<string, number> {
+      const rows = db
+        .prepare('SELECT source_id, COUNT(*) AS n FROM listings WHERE gone_at IS NULL GROUP BY source_id')
+        .all() as { source_id: string; n: number }[]
+      return Object.fromEntries(rows.map((r) => [r.source_id, Number(r.n)]))
+    },
+
     /** Listings newest first (by first seen), cursor-paged, with the Listings page's filters. */
     listListings(input: ListingQueryInput = {}): Page<Listing> {
       const q = ListingQuery.parse(input)
@@ -183,4 +214,5 @@ export function listingsRepository(db: DatabaseSync) {
       return row ? listingFromRow(row) : null
     },
   }
+  return self
 }
