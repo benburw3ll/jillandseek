@@ -3,11 +3,13 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { serve } from '@hono/node-server'
+import { collectors, createFetcher } from '@jillandseek/sources'
 import { createApp } from './app.ts'
 import { isWritable } from './db/home.ts'
 import { openStore, schedulePrune } from './db/store.ts'
 import { HOSTNAME, loadSettings, REPO_ROOT } from './settings.ts'
 import { syncRegistry } from './sweep/registry.ts'
+import { scheduleSweeps } from './sweep/sweep.ts'
 
 const mode = process.argv.includes('--dev') ? 'dev' : 'start'
 const settings = loadSettings(process.env, mode)
@@ -20,6 +22,10 @@ const version = (
 const store = openStore({ home: settings.home, retention: settings.retention, now, log })
 schedulePrune(store, { now, log })
 syncRegistry(store.repo, log)
+const sweeps = settings.sweep
+  ? scheduleSweeps({ repo: store.repo, collectors, fetcher: createFetcher({ version, now }), now, log })
+  : null
+if (sweeps === null) log('sweep: off')
 
 const app = createApp({
   repo: store.repo,
@@ -38,6 +44,7 @@ const server = serve({ fetch: app.fetch, port: settings.port, hostname: HOSTNAME
 })
 
 const stop = () => {
+  sweeps?.stop()
   server.close()
   store.close()
   process.exit(0)

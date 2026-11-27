@@ -26,6 +26,10 @@ const Env = z.object({
   JILL_KEEP_GONE_DAYS: Days.default(90),
   /** Days a found dog is kept after it was marked found. */
   JILL_KEEP_FOUND_DAYS: Days.default(30),
+  /** `off` turns the sweep off. It is on under `pnpm start` and off under `pnpm dev` and in tests. */
+  JILL_SWEEP: z.enum(['on', 'off']).optional(),
+  /** Set by Vitest: the sweep defaults to off in tests. */
+  VITEST: z.string().optional(),
 })
 
 /** `start` keeps real data in data/ and serves the built site; `dev` keeps it in .dev-home/. */
@@ -39,6 +43,8 @@ export type Settings = {
   /** The port the browser uses. Host and Origin must name it (or `port`). */
   sitePort: number
   retention: { keepGoneDays: number; keepFoundDays: number }
+  /** Whether the sweep runs (ADR-0002). */
+  sweep: boolean
 }
 
 export function loadSettings(env: Record<string, string | undefined>, mode: Mode): Settings {
@@ -57,5 +63,6 @@ export function loadSettings(env: Record<string, string | undefined>, mode: Mode
     port,
     sitePort: e.JILL_PORT,
     retention: { keepGoneDays: e.JILL_KEEP_GONE_DAYS, keepFoundDays: e.JILL_KEEP_FOUND_DAYS },
+    sweep: (e.JILL_SWEEP ?? (mode === 'dev' || e.VITEST !== undefined ? 'off' : 'on')) === 'on',
   }
 }

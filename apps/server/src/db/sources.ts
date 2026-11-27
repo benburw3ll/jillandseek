@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { Source, SourceEntry, type SourceEntryInput } from '@jillandseek/core'
+import { BlockedReason, Instant, Source, SourceEntry, type SourceEntryInput } from '@jillandseek/core'
 import { json, type Row, transaction } from './rows.ts'
 
 // The sources table. The registry owns every field but the sweep's: `status` going to `blocked`,
@@ -73,6 +73,30 @@ export function sourcesRepository(db: DatabaseSync) {
     /** Every source, by name. */
     listSources(): Source[] {
       return (db.prepare('SELECT * FROM sources ORDER BY name, id').all() as Row[]).map(sourceFromRow)
+    },
+
+    /** The sweep's mark that it began a read of a source, so the next one waits its interval. */
+    markRead(id: string, now: string): void {
+      Instant.parse(now)
+      db.prepare('UPDATE sources SET last_read_at = ? WHERE id = ?').run(now, id)
+    },
+
+    /** Marks a source blocked (ADR-0002 point 3). Only the owner clears it, with `clearBlock`. */
+    blockSource(id: string, reason: BlockedReason, now: string): void {
+      Instant.parse(now)
+      BlockedReason.parse(reason)
+      db.prepare("UPDATE sources SET status = 'blocked', blocked_at = ?, blocked_reason = ? WHERE id = ?").run(
+        now,
+        reason,
+        id,
+      )
+    },
+
+    /** The owner's clearing of a block. No route calls it yet. */
+    clearBlock(id: string): void {
+      db.prepare(
+        "UPDATE sources SET status = 'active', blocked_at = NULL, blocked_reason = NULL WHERE id = ? AND status = 'blocked'",
+      ).run(id)
     },
 
     getSource(id: string): Source | null {
