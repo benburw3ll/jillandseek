@@ -227,3 +227,69 @@ describe('photos', () => {
     expect(store.repo.getDog(other.id)?.photos).toEqual(kept.photos)
   })
 })
+
+describe('matches', () => {
+  const source = {
+    id: 'example-portal',
+    name: 'Example Portal',
+    url: 'https://portal.example.com/',
+    region: 'Zorbulon County',
+    listingKinds: ['found' as const],
+    access: 'link' as const,
+  }
+  function withListings(store: ReturnType<typeof setup>['store']) {
+    store.repo.syncSources([source])
+    const afton = findTown('Afton')
+    const at = (key: string, postedAt: string) =>
+      store.repo.upsertListing(
+        {
+          sourceId: 'example-portal',
+          sourceKey: key,
+          url: `https://portal.example.com/${key}`,
+          kind: 'found',
+          species: 'dog',
+          postedAt,
+          lat: afton?.lat ?? null,
+          lon: afton?.lon ?? null,
+          placePrecision: 'town',
+          traits: { breeds: ['quux hound'], colors: ['teal'] },
+        },
+        T0,
+      ).id
+    return { after: at('ex-1', '2026-01-11T12:00:00.000Z'), before: at('ex-2', '2025-12-01T12:00:00.000Z') }
+  }
+
+  it('matches a dog when it is saved and serves its ranked matches with their listings and reasons', async () => {
+    const { request, store, tick } = setup()
+    const ids = withListings(store)
+    const dog = await newDog(request)
+    const res = await request(`/api/dogs/${dog.id}/matches`)
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      items: {
+        match: { listingId: number; band: string; reasons: string[]; setAsideReason: string | null }
+        listing: { id: number }
+      }[]
+      ranAt: string
+    }
+    expect(body.ranAt).toBe(T0)
+    expect(body.items.map((i) => i.listing.id)).toEqual([ids.after, ids.before])
+    expect(body.items[1]?.match.setAsideReason).toBe('before-missing')
+    for (const i of body.items) expect(i.match.reasons.length).toBeGreaterThan(0)
+
+    tick('2026-01-12T12:00:00.000Z')
+    const rerun = await request(`/api/dogs/${dog.id}/matches`, send('POST', {}))
+    expect(((await rerun.json()) as { ranAt: string }).ranAt).toBe('2026-01-12T12:00:00.000Z')
+  })
+
+  it('answers 404 for the matches of a dog that is not there, and deletes a dog with its matches', async () => {
+    const { request, store } = setup()
+    withListings(store)
+    expect((await request('/api/dogs/999/matches')).status).toBe(404)
+    expect((await request('/api/dogs/999/matches', send('POST', {}))).status).toBe(404)
+    const dog = await newDog(request)
+    expect(store.repo.listMatches(dog.id)).toHaveLength(2)
+    await request(`/api/dogs/${dog.id}`, send('DELETE', {}))
+    expect(store.repo.counts().matches).toBe(0)
+  })
+})
