@@ -32,10 +32,9 @@ const Answer = z.object({
 })
 
 const words = (list: string[], most: number) =>
-  [...new Set(list.map((w) => w.trim().toLowerCase().replace(/\s+/g, ' ')).filter((w) => w !== '' && w.length <= 60))].slice(
-    0,
-    most,
-  )
+  [
+    ...new Set(list.map((w) => w.trim().toLowerCase().replace(/\s+/g, ' ')).filter((w) => w !== '' && w.length <= 60)),
+  ].slice(0, most)
 
 export const photoTraits: AiFeature<z.infer<typeof Answer>> = {
   name: 'photo-traits',

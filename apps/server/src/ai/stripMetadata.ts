@@ -83,7 +83,9 @@ function keepJpegSegment(marker: number, bytes: Uint8Array, dataAt: number, data
   if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc8) return true
   // A JFIF header with no thumbnail inside it.
   if (marker === 0xe0) {
-    return dataLength === 14 && ascii(bytes, dataAt, 5) === 'JFIF\0' && bytes[dataAt + 12] === 0 && bytes[dataAt + 13] === 0
+    return (
+      dataLength === 14 && ascii(bytes, dataAt, 5) === 'JFIF\0' && bytes[dataAt + 12] === 0 && bytes[dataAt + 13] === 0
+    )
   }
   if (marker === 0xe2) return ascii(bytes, dataAt, 12) === 'ICC_PROFILE\0'
   if (marker === 0xee) return dataLength === 12 && ascii(bytes, dataAt, 5) === 'Adobe'
@@ -95,7 +97,21 @@ function keepJpegSegment(marker: number, bytes: Uint8Array, dataAt: number, data
 // (tIME), animation, anything unknown, and whatever follows IEND.
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-const PNG_KEEP = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS', 'gAMA', 'cHRM', 'sRGB', 'iCCP', 'sBIT', 'bKGD', 'pHYs', 'cICP'])
+const PNG_KEEP = new Set([
+  'IHDR',
+  'PLTE',
+  'IDAT',
+  'IEND',
+  'tRNS',
+  'gAMA',
+  'cHRM',
+  'sRGB',
+  'iCCP',
+  'sBIT',
+  'bKGD',
+  'pHYs',
+  'cICP',
+])
 
 function stripPng(bytes: Uint8Array): Uint8Array | null {
   if (!PNG_SIGNATURE.every((b, i) => bytes[i] === b)) return null

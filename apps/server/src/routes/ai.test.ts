@@ -94,7 +94,12 @@ describe('GET /api/ai', () => {
       monthlyCap: 300,
     })
     const on = setup(createFakeAiClient({ status: { today: 3, month: 40 } }))
-    expect(await (await on.request('/api/ai')).json()).toMatchObject({ enabled: true, keySaved: true, today: 3, month: 40 })
+    expect(await (await on.request('/api/ai')).json()).toMatchObject({
+      enabled: true,
+      keySaved: true,
+      today: 3,
+      month: 40,
+    })
   })
 })
 
@@ -107,11 +112,19 @@ describe('POST /api/ai/photo-traits', () => {
     expect(await res.json()).toEqual({
       dogVisible: true,
       // Lower case, trimmed, no repeats.
-      traits: { breeds: ['zorbulon hound', 'mix'], colors: ['teal', 'white'], size: 'medium', sex: 'unknown', age: 'adult' },
+      traits: {
+        breeds: ['zorbulon hound', 'mix'],
+        colors: ['teal', 'white'],
+        size: 'medium',
+        sex: 'unknown',
+        age: 'adult',
+      },
       marks: 'A white chest patch.',
     })
 
-    const unknown = setup(createFakeAiClient({ answer: answer({ breeds: [], colors: [], size: 'unknown', age: 'unknown', marks: null }) }))
+    const unknown = setup(
+      createFakeAiClient({ answer: answer({ breeds: [], colors: [], size: 'unknown', age: 'unknown', marks: null }) }),
+    )
     expect(await (await unknown.request(READ, photo(pngWithMetadata(), 'image/png'))).json()).toEqual({
       dogVisible: true,
       traits: { breeds: [], colors: [], size: 'unknown', sex: 'unknown', age: 'unknown' },
@@ -139,22 +152,25 @@ describe('POST /api/ai/photo-traits', () => {
     ['image/jpeg', jpegWithMetadata, jpegClean],
     ['image/png', pngWithMetadata, pngClean],
     ['image/webp', webpWithMetadata, webpClean],
-  ] as const)('passes the client a %s with no metadata, and nothing but the photo', async (type, withMetadata, clean) => {
-    const ai = createFakeAiClient({ answer: answer() })
-    const { request } = setup(ai)
-    expect((await request(READ, photo(withMetadata(), type))).status).toBe(200)
-    expect(ai.reads).toHaveLength(1)
-    const [read] = ai.reads
-    expect(read?.feature).toBe('photo-traits')
-    // The route's whole input to the client: the image, and only the image.
-    expect(Object.keys(read ?? {}).sort()).toEqual(['feature', 'image'])
-    expect(Object.keys(read?.image ?? {}).sort()).toEqual(['bytes', 'mediaType'])
-    expect(read?.image.mediaType).toBe(type)
-    expect(read?.image.bytes).toEqual(clean())
-    for (const marker of [GPS_MARKER, TEXT_MARKER, TRAILER_MARKER, 'Exif']) {
-      expect(holds(read?.image.bytes as Uint8Array, marker)).toBe(false)
-    }
-  })
+  ] as const)(
+    'passes the client a %s with no metadata, and nothing but the photo',
+    async (type, withMetadata, clean) => {
+      const ai = createFakeAiClient({ answer: answer() })
+      const { request } = setup(ai)
+      expect((await request(READ, photo(withMetadata(), type))).status).toBe(200)
+      expect(ai.reads).toHaveLength(1)
+      const [read] = ai.reads
+      expect(read?.feature).toBe('photo-traits')
+      // The route's whole input to the client: the image, and only the image.
+      expect(Object.keys(read ?? {}).sort()).toEqual(['feature', 'image'])
+      expect(Object.keys(read?.image ?? {}).sort()).toEqual(['bytes', 'mediaType'])
+      expect(read?.image.mediaType).toBe(type)
+      expect(read?.image.bytes).toEqual(clean())
+      for (const marker of [GPS_MARKER, TEXT_MARKER, TRAILER_MARKER, 'Exif']) {
+        expect(holds(read?.image.bytes as Uint8Array, marker)).toBe(false)
+      }
+    },
+  )
 
   it('sends the API the stripped photo and the fixed instruction only, through the capped client', async () => {
     const fake = createFakeTransport({ text: JSON.stringify(answer()) })
@@ -187,8 +203,11 @@ describe('POST /api/ai/photo-traits', () => {
     expect(store.repo.aiUsage(T0)).toEqual({ today: 1, month: 1 })
     // The log holds counts only: no part of the answer, the photo or the request.
     const log = lines.join('\n')
-    for (const word of ['zorbulon', 'teal', 'chest', 'MARKER', 'sk-ant']) expect(log.toLowerCase()).not.toContain(word.toLowerCase())
-    expect(lines.some((l) => l.startsWith('ai: call id=1 feature=photo-traits model=claude-test-1 outcome=ok'))).toBe(true)
+    for (const word of ['zorbulon', 'teal', 'chest', 'MARKER', 'sk-ant'])
+      expect(log.toLowerCase()).not.toContain(word.toLowerCase())
+    expect(lines.some((l) => l.startsWith('ai: call id=1 feature=photo-traits model=claude-test-1 outcome=ok'))).toBe(
+      true,
+    )
   })
 
   it.each([
@@ -208,7 +227,13 @@ describe('POST /api/ai/photo-traits', () => {
   })
 
   it('answers an answer that does not fit the schema as invalid, and fills nothing', async () => {
-    for (const bad of [answer({ size: 'enormous' }), answer({ breeds: 'hound' }), { dog_visible: true }, 'a hound', null]) {
+    for (const bad of [
+      answer({ size: 'enormous' }),
+      answer({ breeds: 'hound' }),
+      { dog_visible: true },
+      'a hound',
+      null,
+    ]) {
       const { request } = setup(createFakeAiClient({ answer: bad }))
       const res = await request(READ, photo(jpegWithMetadata()))
       expect(res.status).toBe(502)
@@ -248,7 +273,11 @@ describe('the guards on the photo read', () => {
   it('needs the app’s header, an image type and a body of at most 5 MB', async () => {
     const ai = createFakeAiClient({ answer: answer() })
     const { request } = setup(ai)
-    const noHeader = await request(READ, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: jpegWithMetadata() })
+    const noHeader = await request(READ, {
+      method: 'POST',
+      headers: { 'content-type': 'image/jpeg' },
+      body: jpegWithMetadata(),
+    })
     expect(noHeader.status).toBe(403)
     expect(await noHeader.json()).toEqual({ error: { code: 'missing-header' } })
 
@@ -295,7 +324,14 @@ describe('the guards on the photo read', () => {
 
   it('no other route takes an image: each one answers an image body with json-only', async () => {
     const { request } = setup(createFakeAiClient({ answer: answer() }))
-    const others = ['/api/dogs', '/api/dogs/1', '/api/dogs/1/matches', '/api/sources/x/clear-block', '/api/ai', '/api/health']
+    const others = [
+      '/api/dogs',
+      '/api/dogs/1',
+      '/api/dogs/1/matches',
+      '/api/sources/x/clear-block',
+      '/api/ai',
+      '/api/health',
+    ]
     for (const path of others) {
       for (const method of ['POST', 'PATCH', 'DELETE']) {
         const res = await request(path, { ...photo(jpegWithMetadata()), method })

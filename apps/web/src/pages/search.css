@@ -1,0 +1,456 @@
+/* The search screen (#62): the photo drop, the fields, what a photo filled in and the results,
+   designed as one piece. Tokens come from styles.css. No control is left looking like a browser
+   default, and every one keeps its label, its keyboard use and a visible focus ring. */
+
+.search-title:focus {
+  outline: none;
+}
+
+.dog-form.dog-form--search {
+  max-width: none;
+  gap: var(--space-6);
+}
+
+.search__top {
+  display: grid;
+  gap: var(--space-6);
+  align-items: stretch;
+}
+
+@media (min-width: 52rem) {
+  .search__top {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  }
+}
+
+/* The photo drop */
+
+.photo-drop-wrap {
+  display: grid;
+  /* The area takes the height the card beside it has; its notes sit under it. */
+  grid-template-rows: 1fr;
+  grid-auto-rows: auto;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.photo-drop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: var(--space-3);
+  min-height: 15rem;
+  padding: var(--space-6);
+  border: 2px dashed var(--color-control);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(120% 90% at 50% 0%, var(--color-accent-soft), transparent 70%), var(--color-surface);
+  color: var(--color-accent);
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.photo-drop:hover,
+.photo-drop--over {
+  border-color: var(--color-accent);
+}
+
+.photo-drop--over {
+  border-style: solid;
+  background: var(--color-accent-soft);
+  box-shadow: 0 0 0 4px var(--color-accent-soft);
+}
+
+/* The label fills the whole area while it is empty, so a click anywhere opens the picker. */
+.photo-drop__target {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.photo-drop:not(.photo-drop--has) .photo-drop__target {
+  position: absolute;
+  inset: 0;
+  place-content: center;
+  padding: var(--space-6);
+  border-radius: inherit;
+}
+
+/* The file input stays in the page and focusable; only its looks are replaced. */
+.photo-drop__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.photo-drop__target:has(.photo-drop__input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.photo-drop__icon {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.photo-drop__title {
+  font-size: var(--font-size-lead);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.photo-drop__sub {
+  color: var(--color-muted);
+}
+
+.photo-drop--has {
+  grid-template-columns: 1fr;
+  place-items: stretch;
+  padding: var(--space-3);
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.photo-drop__preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--radius-lg) - var(--space-2));
+  background: var(--color-bg);
+}
+
+.photo-drop__preview img,
+.photo-drop__no-preview {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 16rem;
+  object-fit: cover;
+  color: var(--color-muted);
+}
+
+.photo-drop.photo-drop--has .photo-drop__target {
+  display: inline-grid;
+  justify-self: start;
+  padding: var(--space-2) var(--space-4);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--color-control);
+}
+
+.photo-drop--has .photo-drop__title {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.photo-drop--has {
+  grid-template-areas:
+    "preview preview"
+    "replace remove";
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.photo-drop--has .photo-drop__preview {
+  grid-area: preview;
+}
+
+.photo-drop__remove {
+  justify-self: start;
+}
+
+/* While the photo is read, a soft band moves across it. Still, when motion is not wanted. */
+.photo-drop__scan {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 55%) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: photo-scan 1.6s linear infinite;
+}
+
+@keyframes photo-scan {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+.photo-note {
+  max-width: 34rem;
+}
+
+.read-note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+}
+
+.read-note:empty {
+  display: none;
+}
+
+.read-note--busy::before {
+  content: "";
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: var(--space-2);
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  animation: read-spin 0.8s linear infinite;
+}
+
+@keyframes read-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A field the photo filled, until the owner changes it. */
+.field__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+
+.from-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.from-photo::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* The town field's own list */
+
+.town {
+  position: relative;
+}
+
+.town__list {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--space-1);
+  max-height: 18rem;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+}
+
+.town__option {
+  padding: var(--space-2) var(--space-3);
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+}
+
+.town__option:hover {
+  background: var(--color-bg);
+}
+
+.town__option--active {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.town__option--active:hover {
+  background: var(--color-accent);
+}
+
+/* Short choices as a row of buttons */
+
+.choices {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 52rem) {
+  .choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .choices > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* A choice's row of buttons is as wide as its options, not as wide as its column. */
+.choices .field {
+  justify-items: start;
+}
+
+.field__label {
+  font-weight: 600;
+}
+
+.choice {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border-radius: calc(var(--radius) + 3px);
+  background: var(--color-track);
+  box-shadow: inset 0 0 0 1px var(--color-control);
+  max-width: 100%;
+}
+
+.choice__option {
+  position: relative;
+  display: grid;
+  cursor: pointer;
+}
+
+.choice__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice__text {
+  display: grid;
+  place-items: center;
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-weight: 500;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.choice__option:hover .choice__text {
+  background: rgb(255 255 255 / 70%);
+}
+
+.choice__input:checked + .choice__text {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 700;
+  box-shadow: var(--shadow-1);
+}
+
+.choice__input:focus-visible + .choice__text {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The buttons under the form, and the results under them */
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.results {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  scroll-margin-top: var(--space-4);
+}
+
+.results:focus {
+  outline: none;
+}
+
+.results:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: var(--space-2);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 30rem) {
+  .photo-drop {
+    min-height: 12rem;
+  }
+
+  .photo-drop__preview img,
+  .photo-drop__no-preview {
+    height: 13rem;
+  }
+
+  .choices .field {
+    justify-items: stretch;
+  }
+
+  .choice {
+    display: flex;
+  }
+
+  .choice__option {
+    flex: 1 1 auto;
+  }
+
+  .choice__text {
+    padding: 0 var(--space-2);
+  }
+
+  .form-actions .button {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-drop,
+  .choice__text {
+    transition: none;
+  }
+
+  .photo-drop__scan {
+    animation: none;
+    background: rgb(255 255 255 / 35%);
+  }
+
+  .read-note--busy::before {
+    animation: none;
+    border-right-color: currentcolor;
+    opacity: 0.6;
+  }
+}

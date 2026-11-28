@@ -72,7 +72,18 @@ function MatchCard({
   )
 }
 
+/** One dog's page: the dog, and every listing ranked against it. */
 export function DogPage({ id }: { id: number }) {
+  return <DogResults id={id} />
+}
+
+/**
+ * A dog and its ranked listings. The dog page shows it under the page's own heading; the home
+ * screen shows the same thing under the search (`embedded`), one heading level down.
+ */
+export function DogResults({ id, embedded = false }: { id: number; embedded?: boolean }) {
+  const Title = embedded ? 'h2' : 'h1'
+  const Section = embedded ? 'h3' : 'h2'
   const load = useLoad((signal) => loadAll(id, signal))
   const [dog, setDog] = useState<Dog | null>(null)
   const [matches, setMatches] = useState<DogMatches | null>(null)
@@ -114,11 +125,13 @@ export function DogPage({ id }: { id: number }) {
   if (load.state === 'error' || shownDog === null || shown === null) {
     return (
       <>
-        <h1>A missing dog</h1>
+        <Title>A missing dog</Title>
         <p role="alert">This dog and its listings could not be loaded. Check that Jill and Seek's server is running.</p>
-        <p>
-          <Link href="/find">Back to your dogs</Link>
-        </p>
+        {!embedded && (
+          <p>
+            <Link href="/">Back to the search and your dogs</Link>
+          </p>
+        )}
       </>
     )
   }
@@ -132,7 +145,7 @@ export function DogPage({ id }: { id: number }) {
 
   return (
     <>
-      <h1>{name}</h1>
+      <Title>{embedded ? `Listings for ${name}` : name}</Title>
       <section className="dog-summary" aria-label="The dog">
         <p>
           <strong>{shownDog.status === 'found' ? 'Found' : 'Missing'}</strong> · last seen in {shownDog.lastSeenTown},{' '}
@@ -175,7 +188,7 @@ export function DogPage({ id }: { id: number }) {
         </div>
       ) : (
         <>
-          <h2 className="section-title">Ranked listings ({ranked.length})</h2>
+          <Section className="section-title">Ranked listings ({ranked.length})</Section>
           {ranked.length === 0 ? (
             <p>Every listing so far is set aside below.</p>
           ) : (

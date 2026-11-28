@@ -52,7 +52,8 @@ export function jpegClean(): Uint8Array {
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 // The CRC is copied through unchanged and never checked here, so a made-up one is enough.
-const chunk = (type: string, data: Uint8Array | number[]) => join(u32(data.length), text(type), data, [0xc0, 0xff, 0xee, 0x00])
+const chunk = (type: string, data: Uint8Array | number[]) =>
+  join(u32(data.length), text(type), data, [0xc0, 0xff, 0xee, 0x00])
 
 export const PNG_PIXELS = [0x78, 0x9c, 0x63, 0x60, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01]
 
