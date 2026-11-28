@@ -6,6 +6,7 @@
 .env.*
 !.env.example
 *.key
+*.dpapi
 *.pem
 *.log
 profile.local.json

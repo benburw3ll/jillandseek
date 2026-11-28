@@ -1,9 +1,12 @@
 // The server's entry point. `node src/main.ts` is `pnpm start` (real data in data/, serving the
 // built site); `node --watch src/main.ts --dev` is `pnpm dev` (data in .dev-home/, behind Vite).
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { serve } from '@hono/node-server'
 import { collectors, createFetcher } from '@jillandseek/sources'
+import { createAiClient } from './ai/client.ts'
+import { createKeyReader } from './ai/key.ts'
+import { createSdkTransport } from './ai/sdk.ts'
 import { createApp } from './app.ts'
 import { isWritable } from './db/home.ts'
 import { openStore, schedulePrune } from './db/store.ts'
@@ -26,6 +29,23 @@ const sweeps = settings.sweep
   ? scheduleSweeps({ repo: store.repo, collectors, fetcher: createFetcher({ version, now }), now, log })
   : null
 if (sweeps === null) log('sweep: off')
+
+// The one capped client (ADR-0007). With JILL_AI off, which is the default, it refuses every call.
+const ai = createAiClient({
+  settings: settings.ai,
+  repo: store.repo,
+  readKey: createKeyReader({ file: settings.ai.keyFile }),
+  keySaved: () => existsSync(settings.ai.keyFile),
+  transport: (apiKey) => createSdkTransport({ apiKey }),
+  now,
+  log,
+})
+const aiStatus = ai.status()
+log(
+  aiStatus.enabled
+    ? `ai: on model=${aiStatus.model} today=${aiStatus.today}/${aiStatus.dailyCap} month=${aiStatus.month}/${aiStatus.monthlyCap} keySaved=${aiStatus.keySaved}`
+    : 'ai: off',
+)
 
 const app = createApp({
   repo: store.repo,

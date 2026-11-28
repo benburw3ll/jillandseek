@@ -10,5 +10,6 @@ Why Jill and Seek is built the way it is. One file per decision, numbered. An ac
 | [0004](0004-stack.md) | A TypeScript pnpm workspace: React and Vite for the site, Hono on Node for the server, SQLite | Accepted (2026-11-26) |
 | [0005](0005-records.md) | One Listing record for every kind of post, and one set of words | Accepted (2026-11-26) |
 | [0006](0006-ai.md) | Rules first, with AI behind one capped client later | Accepted (2026-11-26) |
+| [0007](0007-claude-api-photo-fill.md) | The Claude API reads a missing dog's photo into the form, behind the capped client | Accepted (2026-11-28) |
 
 A new decision starts as an issue filed with the ADR issue template, in the milestone of the outcome it binds.

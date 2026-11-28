@@ -18,6 +18,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "sources:check": "pnpm --filter @jillandseek/sources run --if-present sources:check",
+    "ai:check": "node apps/server/src/ai/check-main.ts",
     "eval:match": "pnpm --filter @jillandseek/core run --if-present eval:match",
     "test": "vitest run",
     "build": "pnpm -r --if-present build"

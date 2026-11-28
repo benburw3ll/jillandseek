@@ -14,7 +14,7 @@ What is being built now: v1, the version the owner uses first, and whatever usin
 
 | Outcome | What it gives the owner | Status |
 | --- | --- | --- |
-| O7 Find a dog from a photo | Drop a photo on the home screen: the Claude API fills in the dog's traits, and the search runs on one screen | Planned |
+| O7 Find a dog from a photo | Drop a photo on the home screen: the Claude API fills in the dog's traits, and the search runs on one screen | Started |
 | O3 The first sources | A registry of every known source, a sweep on a schedule, and the first Minnesota collectors filling the database | Started |
 
 ### Advanced
