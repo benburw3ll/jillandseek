@@ -77,7 +77,8 @@ export function TownPicker({
         value={value}
         onChange={(e) => {
           onChange(e.target.value)
-          setOpen(true)
+          // The list opens under the field being typed in, not under one filled in from elsewhere.
+          setOpen(document.activeElement === e.target)
           setActive(-1)
         }}
         onFocus={() => setOpen(true)}
