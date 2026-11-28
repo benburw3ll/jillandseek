@@ -45,6 +45,7 @@ export function PhotoDrop({
   savedUrl,
   onChange,
   reading = false,
+  noteId,
   children,
 }: {
   id: string
@@ -55,6 +56,8 @@ export function PhotoDrop({
   onChange: (file: File | null) => void
   /** Whether the photo is being read right now. */
   reading?: boolean
+  /** The id of the note that says where the photo goes, read out with the field. */
+  noteId?: string
   /** Shown under the area: what happens to the photo, and what a read found. */
   children?: ReactNode
 }) {
@@ -133,7 +136,7 @@ export function PhotoDrop({
               accept={TYPES.join(',')}
               onChange={(e) => take([...(e.target.files ?? [])])}
               aria-labelledby={titleId}
-              aria-describedby={`${hintId}${problem !== null ? ` ${problemId}` : ''}`}
+              aria-describedby={[hintId, noteId, problem !== null && problemId].filter(Boolean).join(' ')}
               aria-invalid={problem !== null || undefined}
             />
             {!has && (

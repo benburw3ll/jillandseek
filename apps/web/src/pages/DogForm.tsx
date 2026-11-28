@@ -251,12 +251,13 @@ export function DogFormView({
             ? 'The photo was read, but nothing in it was clear enough to fill in.'
             : `Filled in from the photo: ${list(names.map((n) => LOOK_WORDS[n]))}. Check them, then say where and when the dog was last seen.`,
       )
-      setAi((s) => (s === null ? s : { ...s, today: s.today + 1, month: s.month + 1 }))
     } catch (error) {
       if (mine !== reads.current) return
       setReadNote(READ_PROBLEMS[photoReadError(error)])
     } finally {
       if (mine === reads.current) setReading(false)
+      // Every read counts on the server, whatever came back, so the count is asked for again.
+      fetchAiState().then(setAi, () => {})
     }
   }
 
@@ -369,15 +370,18 @@ export function DogFormView({
   const fromPhotoId = (name: Look) => filled.includes(name) && `dog-${name}-from-photo`
 
   const savedPhoto = dog && photos.length > 0 ? photoUrl(dog.id, photos.at(-1) as string) : null
-  const submitWords = busy
-    ? search
-      ? 'Searching…'
-      : 'Saving…'
-    : search
-      ? dog
-        ? 'Search again'
-        : 'Search'
-      : 'Save changes'
+  // A search waits for the read: the dog is never saved without what the photo is about to fill.
+  const submitWords = reading
+    ? 'Reading the photo…'
+    : busy
+      ? search
+        ? 'Searching…'
+        : 'Saving…'
+      : search
+        ? dog
+          ? 'Search again'
+          : 'Search'
+        : 'Save changes'
 
   const lastSeen = (
     <fieldset className="card">
@@ -571,15 +575,16 @@ export function DogFormView({
             savedUrl={files.length === 0 ? savedPhoto : null}
             onChange={onPhoto}
             reading={reading}
+            noteId="dog-photo-note"
           >
-            <p className="field__hint photo-note">
+            <p className="field__hint photo-note" id="dog-photo-note">
               {ai?.enabled && ai.keySaved
                 ? `AI is on: a photo you add is sent to the Claude API, with its location and other details removed, to fill in what the dog looks like. Nothing else is sent. ${ai.today} of ${ai.dailyCap} reads used today.`
                 : ai?.enabled
                   ? 'AI is on, but no API key is saved, so a photo is not read. It stays on this computer.'
                   : 'The photo stays on this computer.'}
             </p>
-            <p className={`read-note${reading ? ' read-note--busy' : ''}`} role="status" aria-busy={reading}>
+            <p className={`read-note${reading ? ' read-note--busy' : ''}`} role="status">
               {readNote}
             </p>
             {dog && savedPhoto !== null && files.length === 0 && (
@@ -632,7 +637,7 @@ export function DogFormView({
       )}
 
       <div className="form-actions">
-        <button type="submit" className="button button--primary" disabled={busy}>
+        <button type="submit" className="button button--primary" disabled={busy || reading}>
           {submitWords}
         </button>
         {actions}

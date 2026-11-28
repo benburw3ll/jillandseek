@@ -5,13 +5,13 @@ export const GPS_MARKER = 'GPS-MARKER-00.0000N-000.0000W'
 export const TEXT_MARKER = 'COMMENT-MARKER made-up words'
 export const TRAILER_MARKER = 'TRAILER-MARKER a second picture or a clip'
 
-const text = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0))
-const join = (...parts: (Uint8Array | number[])[]) => Uint8Array.from(parts.flatMap((p) => [...p]))
+export const text = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0))
+export const join = (...parts: (Uint8Array | number[])[]) => Uint8Array.from(parts.flatMap((p) => [...p]))
 const u16 = (n: number) => [(n >> 8) & 0xff, n & 0xff]
 const u32 = (n: number) => [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff]
-const u32le = (n: number) => u32(n).reverse()
+export const u32le = (n: number) => u32(n).reverse()
 
-const segment = (marker: number, data: Uint8Array | number[]) => join([0xff, marker], u16(data.length + 2), data)
+export const segment = (marker: number, data: Uint8Array | number[]) => join([0xff, marker], u16(data.length + 2), data)
 
 /** The scan's coded bytes, with a stuffed FF 00 and a restart marker inside, as real scans have. */
 export const JPEG_SCAN = [0x12, 0x34, 0xff, 0x00, 0x56, 0xff, 0xd0, 0x78, 0x9a]
@@ -52,7 +52,7 @@ export function jpegClean(): Uint8Array {
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 // The CRC is copied through unchanged and never checked here, so a made-up one is enough.
-const chunk = (type: string, data: Uint8Array | number[]) =>
+export const chunk = (type: string, data: Uint8Array | number[]) =>
   join(u32(data.length), text(type), data, [0xc0, 0xff, 0xee, 0x00])
 
 export const PNG_PIXELS = [0x78, 0x9c, 0x63, 0x60, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01]
@@ -83,7 +83,7 @@ export function pngClean(): Uint8Array {
   )
 }
 
-const riffChunk = (type: string, data: Uint8Array | number[]) =>
+export const riffChunk = (type: string, data: Uint8Array | number[]) =>
   join(text(type), u32le(data.length), data, data.length % 2 === 1 ? [0] : [])
 
 export const WEBP_PIXELS = [0x2f, 0x00, 0x00, 0x00, 0x00, 0x07, 0x10]

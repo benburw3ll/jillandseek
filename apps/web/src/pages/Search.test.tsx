@@ -92,8 +92,15 @@ function api(answer: (method: string, path: string, body: unknown) => Answer | P
 
 /** The usual answers: an AI state, a save, the saved dog's listings, and a photo read. */
 function usual(options: { ai?: unknown; photoRead?: Answer | (() => Answer | Promise<Answer>); saved?: unknown } = {}) {
+  // The server counts every read, whatever it answered: the state it gives back says so.
+  let readsAsked = 0
   return api((m, p) => {
-    if (m === 'GET' && p === '/api/ai') return options.ai ?? aiOff
+    if (m === 'GET' && p === '/api/ai') {
+      const ai = options.ai ?? aiOff
+      return typeof ai === 'object' && ai !== null && 'today' in ai
+        ? { ...ai, today: (ai.today as number) + readsAsked }
+        : ai
+    }
     if (m === 'GET' && p === '/api/dogs') return { items: [] }
     if (m === 'POST' && p === '/api/dogs') return options.saved ?? dog()
     if (m === 'PATCH' && p === '/api/dogs/7') return options.saved ?? dog()
@@ -102,6 +109,7 @@ function usual(options: { ai?: unknown; photoRead?: Answer | (() => Answer | Pro
     if (m === 'GET' && p === '/api/sources') return { items: [source], listingCounts: {} }
     if (m === 'POST' && p === '/api/dogs/7/photos') return dog({ photos: [PHOTO_NAME] })
     if (m === 'POST' && p === '/api/ai/photo-traits') {
+      readsAsked++
       return typeof options.photoRead === 'function' ? options.photoRead() : (options.photoRead ?? read())
     }
     return undefined
@@ -314,8 +322,10 @@ describe('a photo that fills in the traits', () => {
   it('fills what the made-up answer shows, leaves unknowns unknown, and keeps what was typed', async () => {
     const calls = usual({ ai: aiOn })
     renderAt('/')
-    // The screen says where the photo goes before one is added.
-    expect(await screen.findByText(/a photo you add is sent to the Claude API/)).toBeTruthy()
+    // The screen says where the photo goes before one is added, and the file field reads it out.
+    const notice = await screen.findByText(/a photo you add is sent to the Claude API/)
+    expect(drop().getAttribute('aria-describedby')).toContain(notice.id)
+    expect(notice.id).toBe('dog-photo-note')
     expect(screen.getByText(/3 of 25 reads used today/)).toBeTruthy()
     // The owner typed the colours first: a read never overwrites them.
     fireEvent.change(field('Colours'), { target: { value: 'grey' } })
@@ -336,7 +346,7 @@ describe('a photo that fills in the traits', () => {
     fireEvent.change(field('Breed words'), { target: { value: 'hound' } })
     expect(field('Breed words').value).toBe('hound')
     expect(screen.getAllByText('From the photo')).toHaveLength(3)
-    expect(screen.getByText(/4 of 25 reads used today/)).toBeTruthy()
+    expect(await screen.findByText(/4 of 25 reads used today/)).toBeTruthy()
 
     // One call, and its body is the photo and nothing else.
     const reads = calls.filter((c) => c.path === '/api/ai/photo-traits')
@@ -387,10 +397,14 @@ describe('a photo that fills in the traits', () => {
     renderAt('/')
     await screen.findByText(/a photo you add is sent to the Claude API/)
     choose([png()])
-    const note = await screen.findByText('Reading the photo…')
-    expect(note.getAttribute('role')).toBe('status')
-    expect(note.getAttribute('aria-busy')).toBe('true')
+    const note = (await screen.findAllByText('Reading the photo…')).find((e) => e.getAttribute('role') === 'status')
+    // Said as it changes: a live region marked busy can be held back by a screen reader.
+    expect(note).toBeTruthy()
+    expect(note?.hasAttribute('aria-busy')).toBe(false)
     expect(zone().className).toContain('photo-drop--reading')
+    // The search waits for the read, so a dog is never saved without what the photo is about to fill.
+    const waiting = screen.getByRole('button', { name: 'Reading the photo…' }) as HTMLButtonElement
+    expect(waiting.disabled).toBe(true)
     // Typed while the read is out: kept when the answer lands.
     fireEvent.change(field('Breed words'), { target: { value: 'my own words' } })
     expect(field('Minnesota town').disabled).toBe(false)
@@ -398,6 +412,35 @@ describe('a photo that fills in the traits', () => {
     expect(await screen.findByText(/Filled in from the photo: colours, size, age and marks\./)).toBeTruthy()
     expect(field('Breed words').value).toBe('my own words')
     expect(zone().className).not.toContain('photo-drop--reading')
+    expect((screen.getByRole('button', { name: 'Search' }) as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('drops the answer for a photo that was replaced or removed while it was being read', async () => {
+    const pending: ((answer: unknown) => void)[] = []
+    const calls = usual({ ai: aiOn, photoRead: () => new Promise((done) => pending.push(done)) })
+    renderAt('/')
+    await screen.findByText(/a photo you add is sent to the Claude API/)
+    choose([png()])
+    await waitFor(() => expect(pending).toHaveLength(1))
+    // Replaced before the first answer: the second read is the only one that may fill the form.
+    fireEvent.change(screen.getByLabelText('Replace the photo'), { target: { files: [png('second.png')] } })
+    await waitFor(() => expect(pending).toHaveLength(2))
+    pending[0]?.(read())
+    await new Promise((r) => setTimeout(r, 20))
+    expect(field('Breed words').value).toBe('')
+    expect(screen.queryByText('From the photo')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Reading the photo…' })).toBeTruthy()
+
+    // Removed before the second answer: nothing is filled at all, and the search is free again.
+    fireEvent.click(screen.getByRole('button', { name: /^Remove/ }))
+    pending[1]?.(read())
+    await new Promise((r) => setTimeout(r, 20))
+    expect(field('Breed words').value).toBe('')
+    expect(chosen('Size')).toBe('unknown')
+    expect(screen.queryByText('From the photo')).toBeNull()
+    expect(screen.queryByText(/Filled in from the photo/)).toBeNull()
+    expect((screen.getByRole('button', { name: 'Search' }) as HTMLButtonElement).disabled).toBe(false)
+    expect(calls.filter((c) => c.path === '/api/ai/photo-traits')).toHaveLength(2)
   })
 
   it('reads a replacement photo afresh: what the first one filled goes, and what was typed stays', async () => {

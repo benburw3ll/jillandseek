@@ -32,9 +32,9 @@ function join(parts: Uint8Array[]): Uint8Array {
 
 // JPEG: a run of segments, each `FF <marker> <length> <data>`. The picture is the tables (DQT,
 // DHT, DRI), the frame (SOFn), and the scans (SOS and the coded data after it), up to EOI.
-// Kept besides: a bare JFIF header, the Adobe colour-transform flag and an ICC colour profile,
-// which change how the colours decode. Dropped: EXIF and XMP (APP1), every other APPn, comments,
-// and whatever follows EOI.
+// Kept besides: a bare JFIF header and the Adobe colour-transform flag, which are fixed bytes
+// that change how the colours decode. Dropped: EXIF and XMP (APP1), a colour profile (it carries
+// free text and a date), every other APPn, comments, and whatever follows EOI.
 
 function stripJpeg(bytes: Uint8Array): Uint8Array | null {
   if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return null
@@ -79,7 +79,8 @@ function stripJpeg(bytes: Uint8Array): Uint8Array | null {
 
 function keepJpegSegment(marker: number, bytes: Uint8Array, dataAt: number, dataLength: number): boolean {
   // Tables, frames and scans.
-  if (marker === 0xdb || marker === 0xc4 || marker === 0xdd || marker === 0xda) return true
+  // DQT, DHT, DRI and SOS, and DNL (the height, when the frame leaves it for later).
+  if (marker === 0xdb || marker === 0xc4 || marker === 0xdd || marker === 0xda || marker === 0xdc) return true
   if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc8) return true
   // A JFIF header with no thumbnail inside it.
   if (marker === 0xe0) {
@@ -87,14 +88,14 @@ function keepJpegSegment(marker: number, bytes: Uint8Array, dataAt: number, data
       dataLength === 14 && ascii(bytes, dataAt, 5) === 'JFIF\0' && bytes[dataAt + 12] === 0 && bytes[dataAt + 13] === 0
     )
   }
-  if (marker === 0xe2) return ascii(bytes, dataAt, 12) === 'ICC_PROFILE\0'
   if (marker === 0xee) return dataLength === 12 && ascii(bytes, dataAt, 5) === 'Adobe'
   return false
 }
 
 // PNG: a signature, then chunks of `<length> <type> <data> <crc>`. Kept: the chunks that make the
-// picture and say how its colours decode. Dropped: text (tEXt, zTXt, iTXt), EXIF (eXIf), the time
-// (tIME), animation, anything unknown, and whatever follows IEND.
+// picture and say how its colours decode, in numbers only. Dropped: text (tEXt, zTXt, iTXt), EXIF
+// (eXIf), the time (tIME), a colour profile (iCCP: it carries a name and free text), animation,
+// anything unknown, and whatever follows IEND.
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 const PNG_KEEP = new Set([
@@ -106,7 +107,6 @@ const PNG_KEEP = new Set([
   'gAMA',
   'cHRM',
   'sRGB',
-  'iCCP',
   'sBIT',
   'bKGD',
   'pHYs',
@@ -134,12 +134,15 @@ function stripPng(bytes: Uint8Array): Uint8Array | null {
 }
 
 // WebP: a RIFF container, `RIFF <size> WEBP`, then chunks of `<type> <size> <data>` padded to an
-// even length. Kept: the image (VP8, VP8L), its alpha, an ICC profile, animation frames, and the
-// VP8X header with its EXIF and XMP flags cleared. Dropped: EXIF, XMP and anything unknown.
+// even length. Kept: the one image (the first VP8 or VP8L), its alpha, and the VP8X header with
+// its EXIF, XMP and colour-profile flags cleared. Dropped: EXIF, XMP, a colour profile, a second
+// image and anything unknown. An animation holds many pictures, and chunks of its own inside each
+// frame, so it is refused: the one photo is what is sent (ADR-0007 point 7).
 
-const WEBP_KEEP = new Set(['VP8 ', 'VP8L', 'VP8X', 'ALPH', 'ICCP', 'ANIM', 'ANMF'])
+const VP8X_ICC = 0x20
 const VP8X_EXIF = 0x08
 const VP8X_XMP = 0x04
+const VP8X_ANIMATION = 0x02
 
 function stripWebp(bytes: Uint8Array): Uint8Array | null {
   if (ascii(bytes, 0, 4) !== 'RIFF' || ascii(bytes, 8, 4) !== 'WEBP') return null
@@ -148,18 +151,26 @@ function stripWebp(bytes: Uint8Array): Uint8Array | null {
   const parts: Uint8Array[] = []
   let at = 12
   let sawImage = false
+  let sawAlpha = false
   while (at + 8 <= riffEnd) {
     const type = ascii(bytes, at, 4)
     const size = view.getUint32(at + 4, true)
     const end = at + 8 + size + (size % 2)
     if (at + 8 + size > riffEnd) return null
-    if (WEBP_KEEP.has(type)) {
+    if (type === 'ANIM' || type === 'ANMF') return null
+    if (type === 'VP8X' && ((bytes[at + 8] ?? 0) & VP8X_ANIMATION) !== 0) return null
+    const image = type === 'VP8 ' || type === 'VP8L'
+    // One header, one alpha and one image: a second of any of them is dropped.
+    const keep =
+      (type === 'VP8X' && parts.length === 0) || (type === 'ALPH' && !sawAlpha && !sawImage) || (image && !sawImage)
+    if (keep) {
       // A final chunk may lack its pad byte: copy what is there and pad it here.
       const chunk = new Uint8Array(8 + size + (size % 2))
       chunk.set(bytes.subarray(at, at + 8 + size))
-      if (type === 'VP8X' && size >= 1) chunk[8] = (chunk[8] ?? 0) & ~(VP8X_EXIF | VP8X_XMP)
+      if (type === 'VP8X' && size >= 1) chunk[8] = (chunk[8] ?? 0) & ~(VP8X_ICC | VP8X_EXIF | VP8X_XMP)
       parts.push(chunk)
-      if (type === 'VP8 ' || type === 'VP8L' || type === 'ANMF') sawImage = true
+      if (type === 'ALPH') sawAlpha = true
+      if (image) sawImage = true
     }
     at = end
   }
