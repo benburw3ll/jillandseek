@@ -49,6 +49,7 @@ log(
 
 const app = createApp({
   repo: store.repo,
+  ai,
   now,
   version,
   schemaVersion: store.schemaVersion,

@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { createFakeAiClient } from './ai/fake.ts'
 import { createApp } from './app.ts'
 import { isWritable } from './db/home.ts'
 import { openStore, type Store } from './db/store.ts'
@@ -37,6 +38,7 @@ function setup(options: { siteDir?: string; deps?: Partial<RouteDeps> } = {}) {
     version: '0.1.0',
     schemaVersion: store.schemaVersion,
     dataHomeWritable: () => isWritable(store.home),
+    ai: createFakeAiClient({ fail: 'ai_off', status: { enabled: false } }),
     ports: [DEFAULT_PORT],
     log: (l) => lines.push(l),
     ...options.deps,

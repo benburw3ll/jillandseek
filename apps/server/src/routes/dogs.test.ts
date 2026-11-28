@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { findTown } from '@jillandseek/core'
 import { afterEach, describe, expect, it } from 'vitest'
+import { createFakeAiClient } from '../ai/fake.ts'
 import { createApp } from '../app.ts'
 import { openStore } from '../db/store.ts'
 import { MAX_BODY_BYTES, MAX_PHOTO_BYTES } from '../http/guards.ts'
@@ -37,6 +38,7 @@ function setup() {
     version: '0.1.0',
     schemaVersion: store.schemaVersion,
     dataHomeWritable: () => true,
+    ai: createFakeAiClient({ fail: 'ai_off', status: { enabled: false } }),
     ports: [DEFAULT_PORT],
     log: () => {},
   })
