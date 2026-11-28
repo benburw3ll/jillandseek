@@ -1,4 +1,4 @@
-import { Route, Switch } from 'wouter'
+import { Redirect, Route, Switch } from 'wouter'
 import { Layout } from './Layout.tsx'
 import { DogPage } from './pages/DogPage.tsx'
 import { FindDog } from './pages/FindDog.tsx'
@@ -13,7 +13,8 @@ export function App() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/find">{() => <FindDog key="new" />}</Route>
+        {/* The search used to live at /find. An old link still lands on it. */}
+        <Route path="/find">{() => <Redirect to="/" replace />}</Route>
         <Route path="/find/:id">
           {(p) => (/^[1-9]\d{0,15}$/.test(p.id) ? <FindDog key={p.id} id={Number(p.id)} /> : <NotFound />)}
         </Route>

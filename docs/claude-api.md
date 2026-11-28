@@ -34,6 +34,10 @@ Steps 1 to 3 were done for the owner's install on 2026-11-28. They stay here for
 
    That sets it for this one PowerShell window. Start the app without it and AI is off again.
 
+## Using it
+
+With AI on and a key saved, the home screen says so under the photo area. Drop one photo of the missing dog there: the breed words, colours, size, sex, age and marks fill in from it, each marked "From the photo" until you change it. Anything the photo doesn't show stays empty or Not known, only a field that is still empty or Not known is filled, so what you typed is never overwritten, and the town and the time are always yours to give. With AI off, or when a read fails or a cap is reached, the form works by hand as before.
+
 ## Where the key lives
 
 - In `%LOCALAPPDATA%\JillAndSeek\claude-api-key.dpapi`: under the user's profile, outside the repo and outside the data home, so a copy or backup of `data/` never carries it.

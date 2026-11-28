@@ -2,9 +2,11 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderAt } from '../test/render.tsx'
 
-// Find a dog (#17). The dog is made up; the town is a public Census name.
+// Find a dog (#17), now the home screen's search (#59): /find lands on it. The dog is made up; the
+// town is a public Census name.
 
 const T0 = '2026-01-10T12:00:00.000Z'
+const PHOTO_NAME = `${'ab'.repeat(16)}.png`
 const dog = (extra: Record<string, unknown> = {}) => ({
   id: 7,
   label: 'Zorbulon',
@@ -45,7 +47,7 @@ describe('Find a dog', () => {
     const calls = api((m, p) => (m === 'GET' && p === '/api/dogs' ? { items: [] } : undefined))
     renderAt('/find')
     fireEvent.change(screen.getByLabelText('Minnesota town'), { target: { value: 'Quuxville' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save the dog' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
     const summary = await screen.findByRole('alert')
     expect(summary.textContent).toContain('Pick the town from the list')
     expect(summary.textContent).toContain('Give the date and time')
@@ -64,8 +66,8 @@ describe('Find a dog', () => {
     fireEvent.change(screen.getByLabelText('Minnesota town'), { target: { value: 'ada' } })
     fireEvent.change(screen.getByLabelText('Date and time'), { target: { value: '2026-01-10T06:00' } })
     fireEvent.change(screen.getByLabelText('Breed words'), { target: { value: 'Zorbulon Hound, mix' } })
-    fireEvent.change(screen.getByLabelText('Size'), { target: { value: 'small' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save the dog' }))
+    fireEvent.click(within(screen.getByLabelText('Size')).getByLabelText('Small'))
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
     expect(await screen.findByText('The dog was saved.')).toBeTruthy()
     const post = calls.find((c) => c.method === 'POST')
     expect(post?.path).toBe('/api/dogs')
@@ -120,17 +122,18 @@ describe('Find a dog', () => {
       if (m === 'GET' && p === '/api/dogs') return { items: [] }
       if (m === 'POST' && p === '/api/dogs') return dog()
       if (m === 'PATCH' && p === '/api/dogs/7') return dog()
-      if (m === 'POST' && p === '/api/dogs/7/photos') return ++photoTries === 1 ? undefined : dog()
+      if (m === 'POST' && p === '/api/dogs/7/photos')
+        return ++photoTries === 1 ? undefined : dog({ photos: [PHOTO_NAME] })
       return undefined
     })
     renderAt('/find')
     fireEvent.change(screen.getByLabelText('Minnesota town'), { target: { value: 'Ada' } })
     fireEvent.change(screen.getByLabelText('Date and time'), { target: { value: '2026-01-10T06:00' } })
     const photo = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'zorbulon.png', { type: 'image/png' })
-    fireEvent.change(screen.getByLabelText('Add photos'), { target: { files: [photo] } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save the dog' }))
-    expect(await screen.findByText(/1 photo\(s\) could not be/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    fireEvent.change(screen.getByLabelText('Photo of the dog'), { target: { files: [photo] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+    expect(await screen.findByText(/its photo could not be/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Search again' }))
     await waitFor(() => expect(photoTries).toBe(2))
     expect(calls.filter((c) => c.method === 'POST' && c.path === '/api/dogs')).toHaveLength(1)
     expect(calls.some((c) => c.method === 'PATCH' && c.path === '/api/dogs/7')).toBe(true)

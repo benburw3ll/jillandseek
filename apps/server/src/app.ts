@@ -3,6 +3,7 @@ import { jsonError } from './http/errors.ts'
 import { capBody, hostAndOrigin, ownHosts, sameOriginApi, stateChange } from './http/guards.ts'
 import { type Log, requestLog } from './http/log.ts'
 import { siteHandler } from './http/site.ts'
+import { aiRoutes } from './routes/ai.ts'
 import type { RouteDeps } from './routes/deps.ts'
 import { dogsRoutes } from './routes/dogs.ts'
 import { healthRoutes } from './routes/health.ts'
@@ -36,7 +37,7 @@ export function createApp(options: AppOptions) {
     if (c.req.path.startsWith('/api/')) c.header('cache-control', 'no-store')
     c.header(
       'content-security-policy',
-      "default-src 'self'; img-src 'self' https: data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; img-src 'self' https: data: blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
     )
   })
   app.use(hostAndOrigin(ownHosts(options.ports)))
@@ -49,6 +50,7 @@ export function createApp(options: AppOptions) {
   api.route('/', listingsRoutes(options))
   api.route('/', sweepsRoutes(options))
   api.route('/', dogsRoutes(options))
+  api.route('/', aiRoutes(options))
   app.route('/api', api)
   app.all('/api/*', (c) => jsonError(c, 404, 'not-found'))
 

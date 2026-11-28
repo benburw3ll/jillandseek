@@ -6,9 +6,22 @@ import type { z } from 'zod'
 /** An answer the site couldn't use: an HTTP error, or a body that doesn't fit the schema. */
 export class ApiError extends Error {
   readonly status: number
-  constructor(status: number, message: string) {
+  /** The server's error code (`{ error: { code } }`), when it sent one. */
+  readonly code: string | null
+  constructor(status: number, message: string, code: string | null = null) {
     super(message)
     this.status = status
+    this.code = code
+  }
+}
+
+/** The code in a failed answer's body, or null. Never the body itself. */
+async function errorCode(res: Response): Promise<string | null> {
+  try {
+    const body = (await res.json()) as { error?: { code?: unknown } } | null
+    return typeof body?.error?.code === 'string' ? body.error.code : null
+  } catch {
+    return null
   }
 }
 
@@ -41,7 +54,7 @@ async function send<T>(
     },
     body: isJson ? JSON.stringify(body.json) : body.bytes,
   })
-  if (!res.ok) throw new ApiError(res.status, `${method} /api${path} answered ${res.status}`)
+  if (!res.ok) throw new ApiError(res.status, `${method} /api${path} answered ${res.status}`, await errorCode(res))
   if (schema === null) return undefined as T
   const parsed = schema.safeParse(await res.json())
   if (!parsed.success) throw new ApiError(res.status, `${method} /api${path} answered a shape the site doesn't know`)

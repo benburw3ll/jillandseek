@@ -1,6 +1,7 @@
 import type { ListingCandidateInput } from '@jillandseek/core'
 import { type Collector, type FetchedPage, type SharedFetcher, SourceBlocked } from '@jillandseek/sources'
 import { describe, expect, it } from 'vitest'
+import { createFakeAiClient } from '../ai/fake.ts'
 import { createApp } from '../app.ts'
 import type { Store } from '../db/store.ts'
 import { runSweep } from './sweep.ts'
@@ -177,6 +178,7 @@ describe('the sweep', () => {
       version: '0.1.0',
       schemaVersion: s.store.schemaVersion,
       dataHomeWritable: () => true,
+      ai: createFakeAiClient({ fail: 'ai_off', status: { enabled: false } }),
       ports: [5200],
       log: (l) => logged.push(l),
     })
@@ -214,6 +216,7 @@ describe('the sweep', () => {
       version: '0.1.0',
       schemaVersion: s.store.schemaVersion,
       dataHomeWritable: () => true,
+      ai: createFakeAiClient({ fail: 'ai_off', status: { enabled: false } }),
       ports: [5200],
       log: () => {},
     })
