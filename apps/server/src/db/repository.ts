@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import { aiCallsRepository } from './aiCalls.ts'
 import { dogsRepository } from './dogs.ts'
 import { listingsRepository } from './listings.ts'
 import { matchesRepository } from './matches.ts'
@@ -18,6 +19,7 @@ export function createRepository(db: DatabaseSync, options: { photosDir: string;
     ...dogsRepository(db, options.photosDir),
     ...matchesRepository(db),
     ...pruneRepository(db, options.photosDir, options.retention),
+    ...aiCallsRepository(db),
 
     /** How many rows each table holds. */
     counts() {
