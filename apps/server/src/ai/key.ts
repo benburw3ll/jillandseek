@@ -64,7 +64,9 @@ export function createKeyReader(options: { file: string; decrypt?: Decrypt }): (
     } catch {
       result = { ok: false, reason: 'cant_decrypt' }
     }
-    cached = { stamp, result }
+    // A failed decrypt is not remembered: it may be PowerShell starting slowly, and the next read
+    // tries again. A decrypted key, usable or not, stays the same until the file changes.
+    cached = result.ok || result.reason === 'bad_shape' ? { stamp, result } : null
     return result
   }
 }

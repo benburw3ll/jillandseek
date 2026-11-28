@@ -98,7 +98,9 @@ describe('the request', () => {
     vi.stubEnv('ANTHROPIC_BASE_URL', 'http://127.0.0.1:9/elsewhere')
     vi.stubEnv(
       'ANTHROPIC_CUSTOM_HEADERS',
-      ['authorization: Bearer made-up-login-token', `x-api-key: ${OTHER_KEY}`].join('\n'),
+      ['authorization: Bearer made-up-login-token', `x-api-key: ${OTHER_KEY}`, 'x-made-up-gateway: HEADER-MARKER'].join(
+        '\n',
+      ),
     )
     vi.stubEnv('ANTHROPIC_LOG', 'debug')
     const logged = vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -112,6 +114,10 @@ describe('the request', () => {
     const allHeaders = JSON.stringify([...(sent?.headers ?? [])])
     expect(allHeaders).not.toContain('made-up-login-token')
     expect(allHeaders).not.toContain(OTHER_KEY)
+    // Another tool's custom headers don't go out with the request, and the variable is left as it was.
+    expect(allHeaders).not.toContain('HEADER-MARKER')
+    expect(sent?.headers.get('x-made-up-gateway')).toBeNull()
+    expect(process.env.ANTHROPIC_CUSTOM_HEADERS).toContain('HEADER-MARKER')
     // The SDK's own debug log, which would print the request, stays off whatever the environment says.
     expect(logged).not.toHaveBeenCalled()
     expect(debugged).not.toHaveBeenCalled()
@@ -241,6 +247,18 @@ describe('where the SDK may be imported', () => {
       .filter((file) => !file.endsWith('.test.ts') && readFileSync(file, 'utf8').includes(SDK))
       .map((file) => relative(REPO_ROOT, file).split(sep).join('/'))
     expect(importers).toEqual(['apps/server/src/ai/sdk.ts'])
+  })
+
+  it('reaches the app only through the capped client: sdk.ts is imported where the client is built, and by the check', () => {
+    // A route or a job that imported sdk.ts could send a call that is never counted. Only the two
+    // entry points may: main.ts hands the transport to the capped client, and check-main.ts lists
+    // the models for `pnpm ai:check`.
+    const importers = ['apps', 'packages', 'scripts', 'test']
+      .flatMap((top) => sources(join(REPO_ROOT, top)))
+      .filter((file) => !file.endsWith('.test.ts') && /from '[^']*\/sdk\.ts'/.test(readFileSync(file, 'utf8')))
+      .map((file) => relative(REPO_ROOT, file).split(sep).join('/'))
+      .sort()
+    expect(importers).toEqual(['apps/server/src/ai/check-main.ts', 'apps/server/src/main.ts'])
   })
 
   it('is a dependency of apps/server alone', () => {

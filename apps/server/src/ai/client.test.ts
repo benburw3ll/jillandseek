@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { openStore, type Store } from '../db/store.ts'
-import { type AiSettings, loadSettings } from '../settings.ts'
+import { type AiSettings, loadSettings, REPO_ROOT } from '../settings.ts'
 import { type AiClientOptions, AiError, type AiFeature, AiTransportError, createAiClient } from './client.ts'
 import { createFakeAiClient, createFakeTransport } from './fake.ts'
 import type { KeyResult } from './key.ts'
@@ -104,6 +104,20 @@ describe('off by default', () => {
     const settings = loadSettings({ LOCALAPPDATA: join(tmpdir(), 'made-up-appdata') }, 'start')
     expect(settings.ai.keyFile).toBe(join(tmpdir(), 'made-up-appdata', 'JillAndSeek', 'claude-api-key.dpapi'))
     expect(settings.ai.keyFile.startsWith(settings.home)).toBe(false)
+  })
+
+  it('refuses a key file path that is relative, in the repo or in the data home', () => {
+    const elsewhere = join(tmpdir(), 'made-up-keys', 'key.dpapi')
+    expect(loadSettings({ JILL_AI_KEY_FILE: elsewhere }, 'start').ai.keyFile).toBe(elsewhere)
+    const home = join(tmpdir(), 'made-up-home')
+    for (const bad of [
+      'key.dpapi',
+      join(REPO_ROOT, 'key.dpapi'),
+      join(REPO_ROOT, 'data', 'key.dpapi'),
+      join(home, 'key.dpapi'),
+    ]) {
+      expect(() => loadSettings({ JILL_AI_KEY_FILE: bad, JILL_HOME: home }, 'start')).toThrow(/outside the repo/)
+    }
   })
 
   it('refuses every call with ai_off, and reads no key, counts nothing and sends nothing', async () => {

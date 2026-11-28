@@ -32,6 +32,11 @@ if ([string]::IsNullOrWhiteSpace($target)) {
   if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) { Stop-WithMessage 'LOCALAPPDATA is not set, so there is no place to save the key.' }
   $target = Join-Path (Join-Path $env:LOCALAPPDATA 'JillAndSeek') 'claude-api-key.dpapi'
 }
+# The key file is never in the repo: a relative path, or one under the repo's folder, is refused.
+$repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot)).TrimEnd('\') + '\'
+if (-not [IO.Path]::IsPathRooted($target)) { Stop-WithMessage 'JILL_AI_KEY_FILE must be a full path outside the repo. Nothing was saved.' }
+$target = [IO.Path]::GetFullPath($target)
+if ($target.StartsWith($repoRoot, [StringComparison]::OrdinalIgnoreCase)) { Stop-WithMessage 'JILL_AI_KEY_FILE points inside the repo. The key is never saved there. Nothing was saved.' }
 
 $key = $null
 $fromClipboard = $false

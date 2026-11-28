@@ -52,7 +52,7 @@ Set these for the app's own start. All are optional.
 | `JILL_AI_MODEL` | `claude-opus-5-5` | The model a read uses. `claude-sonnet-5-5` and `claude-haiku-5-5` cost less per call |
 | `JILL_AI_DAILY_CAP` | `25` | The most calls in one UTC day |
 | `JILL_AI_MONTHLY_CAP` | `300` | The most calls in one UTC month |
-| `JILL_AI_KEY_FILE` | (see above) | Another place for the encrypted key file |
+| `JILL_AI_KEY_FILE` | (see above) | Another place for the encrypted key file: a full path outside the repo and the data home |
 
 ## What a read sends, and what it costs
 

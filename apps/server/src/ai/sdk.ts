@@ -29,8 +29,8 @@ type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Resp
 
 /**
  * The last word on where a request goes and whose it is. A request for any other address is
- * refused and never leaves the computer. The credential is set here to exactly this key, so a
- * header from the environment (ANTHROPIC_CUSTOM_HEADERS) can't swap in another one.
+ * refused and never leaves the computer. The credential is set here to exactly this key, so
+ * nothing else can swap in another one.
  */
 function guardedFetch(inner: Fetch, apiKey: string): Fetch {
   return async (input, init) => {
@@ -46,18 +46,39 @@ function guardedFetch(inner: Fetch, apiKey: string): Fetch {
   }
 }
 
+/**
+ * ANTHROPIC_CUSTOM_HEADERS is the one variable the SDK reads whatever it is given: its
+ * constructor adds those headers to every request. Another tool's headers (a gateway's token,
+ * say) must not go out with a photo, so the variable is out of the environment for the moment
+ * the client is built, and back unchanged after. The constructor is synchronous, so nothing else
+ * runs in between.
+ */
+function withoutCustomHeaders<T>(build: () => T): T {
+  const NAME = 'ANTHROPIC_CUSTOM_HEADERS'
+  const saved = process.env[NAME]
+  delete process.env[NAME]
+  try {
+    return build()
+  } finally {
+    if (saved !== undefined) process.env[NAME] = saved
+  }
+}
+
 export function createSdkTransport(options: { apiKey: string; fetch?: Fetch }): AiTransport {
-  const client = new Anthropic({
-    apiKey: options.apiKey,
-    baseURL: API_URL,
-    // One counted call is one request: the SDK's own retries are off.
-    maxRetries: 0,
-    timeout: TIMEOUT_MS,
-    // The SDK can log request bodies and export traces when the environment asks. Neither, ever.
-    logLevel: 'off',
-    openTelemetry: false,
-    fetch: guardedFetch(options.fetch ?? ((input, init) => fetch(input, init)), options.apiKey),
-  })
+  const client = withoutCustomHeaders(
+    () =>
+      new Anthropic({
+        apiKey: options.apiKey,
+        baseURL: API_URL,
+        // One counted call is one request: the SDK's own retries are off.
+        maxRetries: 0,
+        timeout: TIMEOUT_MS,
+        // The SDK can log request bodies and export traces when the environment asks. Neither, ever.
+        logLevel: 'off',
+        openTelemetry: false,
+        fetch: guardedFetch(options.fetch ?? ((input, init) => fetch(input, init)), options.apiKey),
+      }),
+  )
 
   return {
     async send(request: AiTransportRequest): Promise<AiTransportAnswer> {

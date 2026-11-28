@@ -7,6 +7,7 @@ const FORBIDDEN_PATHS = [
   { pattern: /(^|\/)\.dev-home\//, why: 'dev data homes stay local' },
   { pattern: /(^|\/)profile\.local\.json$/, why: 'the owner profile holds personal content' },
   { pattern: /\.(key|pem)$/i, why: 'key files belong in secrets/' },
+  { pattern: /\.dpapi$/i, why: 'a saved API key lives under the user profile, never in the repo' },
   { pattern: /(^|\/)\.env(\.(?!example$)[^/]+)?$/, why: 'env files hold secrets' },
 ]
 

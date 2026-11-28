@@ -1,5 +1,5 @@
 import { homedir } from 'node:os'
-import { isAbsolute, join, resolve } from 'node:path'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { z } from 'zod'
 
 // Settings read from the environment, checked with zod (ADR-0004 point 4).
@@ -112,12 +112,25 @@ export function loadSettings(env: Record<string, string | undefined>, mode: Mode
       model: e.JILL_AI_MODEL,
       dailyCap: e.JILL_AI_DAILY_CAP,
       monthlyCap: e.JILL_AI_MONTHLY_CAP,
-      keyFile: resolveKeyFile(e.JILL_AI_KEY_FILE, e.LOCALAPPDATA),
+      keyFile: resolveKeyFile(e.JILL_AI_KEY_FILE, e.LOCALAPPDATA, home),
     },
   }
 }
 
-function resolveKeyFile(given: string | undefined, localAppData: string | undefined): string {
+const inside = (folder: string, path: string) => {
+  const rel = relative(folder, path)
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+/**
+ * The key file is never in the repo or the data home (ADR-0007 point 5): a relative path, or one
+ * inside either folder, stops the app at start instead of putting the key a `git add` away.
+ */
+function resolveKeyFile(given: string | undefined, localAppData: string | undefined, home: string): string {
   if (given === undefined) return defaultKeyFile(localAppData)
-  return isAbsolute(given) ? given : resolve(REPO_ROOT, given)
+  const file = resolve(given)
+  if (!isAbsolute(given) || inside(REPO_ROOT, file) || inside(home, file)) {
+    throw new Error('JILL_AI_KEY_FILE must be a full path outside the repo and the data home')
+  }
+  return file
 }

@@ -7,6 +7,10 @@ describe('forbiddenPaths', () => {
     expect(refused).toHaveLength(4)
   })
 
+  it('refuses a saved API key file, wherever it is', () => {
+    expect(forbiddenPaths(['claude-api-key.dpapi', 'apps/server/key.DPAPI'])).toHaveLength(2)
+  })
+
   it('lets ordinary files and .env.example through', () => {
     expect(forbiddenPaths(['apps/server/src/app.ts', '.env.example', 'docs/data/notes.md'])).toEqual([])
   })

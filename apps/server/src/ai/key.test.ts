@@ -100,6 +100,22 @@ describe('the key reader', () => {
     expect(read()).toEqual({ ok: true, key: dummy('usr') })
     expect(decrypts).toBe(2)
   })
+
+  it('tries again after a failed decrypt, so one slow start does not turn AI off for the session', () => {
+    const file = keyFile(`rev:${reverse(dummy('api03'))}`)
+    let decrypts = 0
+    const read = createKeyReader({
+      file,
+      decrypt: (f) => {
+        if (++decrypts === 1) throw new Error('timed out')
+        return fakeDecrypt(f)
+      },
+    })
+    expect(read()).toEqual({ ok: false, reason: 'cant_decrypt' })
+    expect(read()).toEqual({ ok: true, key: dummy('api03') })
+    expect(read()).toEqual({ ok: true, key: dummy('api03') })
+    expect(decrypts).toBe(2)
+  })
 })
 
 describe('pnpm ai:check', () => {
