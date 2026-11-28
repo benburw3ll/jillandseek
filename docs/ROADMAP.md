@@ -14,6 +14,7 @@ What is being built now: v1, the version the owner uses first, and whatever usin
 
 | Outcome | What it gives the owner | Status |
 | --- | --- | --- |
+| O7 Find a dog from a photo | Drop a photo on the home screen: the Claude API fills in the dog's traits, and the search runs on one screen | Planned |
 | O3 The first sources | A registry of every known source, a sweep on a schedule, and the first Minnesota collectors filling the database | Started |
 
 ### Advanced
@@ -37,4 +38,4 @@ None yet. Ideas not yet designed (photo matching, AI second looks, a source-find
 | O2 The bare bones | The workspace, its gate, the database, the server and the site's first pages run on the owner's computer | Done |
 | O4 Search for a missing dog | Enter a missing dog and see every collected listing ranked against it, with reasons | Done |
 
-O1 came first: its six ADRs were accepted on 2026-11-26, and nothing is built ahead of the ADR that binds it (AGENTS.md, hard rule 1). O2 to O4 are v1 and were built in order, because each one reads what the one before it stores. O3 stays open while more sources are checked and read. O5 and O6 are v1.1: both build on O4's matching.
+O1 came first: its six ADRs were accepted on 2026-11-26, and nothing is built ahead of the ADR that binds it (AGENTS.md, hard rule 1). O2 to O4 are v1 and were built in order, because each one reads what the one before it stores. O3 stays open while more sources are checked and read. The owner put O7 first on 2026-11-27: it starts with the Claude API's decision record, its capped client and its key, and nothing calls a model before they are in. O5 and O6 are v1.1: both build on O4's matching.
